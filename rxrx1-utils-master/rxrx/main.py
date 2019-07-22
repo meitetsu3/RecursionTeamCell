@@ -508,4 +508,4 @@ if __name__ == '__main__':
     tf.logging.info('Parsed args: ')
     for k, v in args.items():
         tf.logging.info('{} : {}'.format(k, v))
-    main(**args) 
+    main(**args) 
