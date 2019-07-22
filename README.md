@@ -1,6 +1,6 @@
 # Recursion
 
-Kaggle Recursion competition
+Kaggle Recursion competition. TeamCell.
 
 ## Requirements
 

@@ -44,7 +44,7 @@ DEFAULT_INPUT_FN_PARAMS = {
     'parallel_interleave_prefetch_input_elements': None,
     'map_and_batch_num_parallel_calls': 128,
     'transpose_num_parallel_calls': 128,
-    'prefetch_buffer_size': tf.contrib.data.AUTOTUNE,
+    'prefetch_buffer_size': tf.estimator.data.AUTOTUNE,
 }
 
 # The mean and stds for each of the channels
@@ -98,7 +98,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
             inputs=features, is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
     if tf_precision == 'bfloat16':
-        with tf.contrib.tpu.bfloat16_scope():
+        with tf.estimator.tpu.bfloat16_scope():
             logits = build_network()
         logits = tf.cast(logits, tf.float32)
     elif tf_precision == 'float32':
@@ -118,7 +118,6 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
 
     # If necessary, in the model_fn, use params['batch_size'] instead the batch
     # size flags (--train_batch_size or --eval_batch_size).
-    batch_size = params['batch_size']  # pylint: disable=unused-variable
 
     # Calculate loss, which includes softmax cross entropy and L2 regularization.
     one_hot_labels = tf.one_hot(labels, n_classes)
@@ -160,7 +159,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
             # When using TPU, wrap the optimizer with CrossShardOptimizer which
             # handles synchronization details between different TPU cores. To the
             # user, this should look like regular synchronous training.
-            optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+            optimizer = tf.estimator.tpu.CrossShardOptimizer(optimizer)
 
         # Batch normalization requires UPDATE_OPS to be added as a dependency to
         # the train operation.
@@ -244,7 +243,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
 
         eval_metrics = (metric_fn, [labels, logits])
 
-    return tf.contrib.tpu.TPUEstimatorSpec(
+    return tf.estimator.tpu.TPUEstimatorSpec(
         mode=mode,
         loss=loss,
         train_op=train_op,
@@ -289,20 +288,22 @@ def main(use_tpu,
     log_step_count_steps = steps_per_epoch * log_step_count_epochs
 
 
-    tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
+    tpu_cluster_resolver = tf.estimator.cluster_resolver.TPUClusterResolver(
         tpu if (tpu or use_tpu) else '', zone=tpu_zone, project=gcp_project)
 
-
-    config = tf.contrib.tpu.RunConfig(
+    strategy = tf.distribute.MirroredStrategy()
+    
+    config = tf.estimator.tpu.RunConfig(
         cluster=tpu_cluster_resolver,
         model_dir=model_dir,
         save_summary_steps=iterations_per_loop,
         save_checkpoints_steps=iterations_per_loop,
         log_step_count_steps=log_step_count_steps,
-        tpu_config=tf.contrib.tpu.TPUConfig(
+        eval_distribute = strategy,
+        tpu_config=tf.estimator.tpu.TPUConfig(
             iterations_per_loop=iterations_per_loop,
             num_shards=num_cores,
-            per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.
+            per_host_input_for_training=tf.estimator.tpu.InputPipelineConfig.
             PER_HOST_V2))  # pylint: disable=line-too-long
 
     model_fn = functools.partial(
@@ -323,7 +324,7 @@ def main(use_tpu,
         resnet_depth=resnet_depth)
 
 
-    resnet_classifier = tf.contrib.tpu.TPUEstimator(
+    resnet_classifier = tf.estimator.tpu.TPUEstimator(
         use_tpu=use_tpu,
         model_fn=model_fn,
         config=config,
@@ -508,4 +509,4 @@ if __name__ == '__main__':
     tf.logging.info('Parsed args: ')
     for k, v in args.items():
         tf.logging.info('{} : {}'.format(k, v))
-    main(**args) 
+    main(**args)
