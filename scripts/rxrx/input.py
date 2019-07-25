@@ -99,7 +99,7 @@ def input_fn(tf_records_glob,
         return dataset
 
     images_dataset = filenames_dataset.apply(
-        tf.estimator.data.parallel_interleave(
+        tf.contrib.data.parallel_interleave(
             fetch_images,
             cycle_length=input_fn_params['parallel_interleave_cycle_length'],
             block_length=input_fn_params['parallel_interleave_block_length'],
@@ -113,7 +113,7 @@ def input_fn(tf_records_glob,
 
     # examples dataset
     dataset = images_dataset.apply(
-        tf.estimator.data.map_and_batch(
+        tf.contrib.data.map_and_batch(
             lambda value: parse_example(value,
                                         use_bfloat16=use_bfloat16,
                                         pixel_stats=pixel_stats),

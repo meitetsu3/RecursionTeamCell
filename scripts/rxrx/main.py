@@ -44,7 +44,7 @@ DEFAULT_INPUT_FN_PARAMS = {
     'parallel_interleave_prefetch_input_elements': None,
     'map_and_batch_num_parallel_calls': 128,
     'transpose_num_parallel_calls': 128,
-    'prefetch_buffer_size': tf.estimator.data.AUTOTUNE,
+    'prefetch_buffer_size': tf.contrib.data.AUTOTUNE,
 }
 
 # The mean and stds for each of the channels
@@ -243,7 +243,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
 
         eval_metrics = (metric_fn, [labels, logits])
 
-    return tf.estimator.tpu.TPUEstimatorSpec(
+    return tf.contrib.tpu.TPUEstimatorSpec(
         mode=mode,
         loss=loss,
         train_op=train_op,
@@ -288,22 +288,22 @@ def main(use_tpu,
     log_step_count_steps = steps_per_epoch * log_step_count_epochs
 
 
-    tpu_cluster_resolver = tf.estimator.cluster_resolver.TPUClusterResolver(
+    tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
         tpu if (tpu or use_tpu) else '', zone=tpu_zone, project=gcp_project)
 
     strategy = tf.distribute.MirroredStrategy()
     
-    config = tf.estimator.tpu.RunConfig(
+    config = tf.contrib.tpu.RunConfig(
         cluster=tpu_cluster_resolver,
         model_dir=model_dir,
         save_summary_steps=iterations_per_loop,
         save_checkpoints_steps=iterations_per_loop,
         log_step_count_steps=log_step_count_steps,
         eval_distribute = strategy,
-        tpu_config=tf.estimator.tpu.TPUConfig(
+        tpu_config=tf.contrib.tpu.TPUConfig(
             iterations_per_loop=iterations_per_loop,
             num_shards=num_cores,
-            per_host_input_for_training=tf.estimator.tpu.InputPipelineConfig.
+            per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.
             PER_HOST_V2))  # pylint: disable=line-too-long
 
     model_fn = functools.partial(
@@ -324,7 +324,7 @@ def main(use_tpu,
         resnet_depth=resnet_depth)
 
 
-    resnet_classifier = tf.estimator.tpu.TPUEstimator(
+    resnet_classifier = tf.contrib.tpu.TPUEstimator(
         use_tpu=use_tpu,
         model_fn=model_fn,
         config=config,

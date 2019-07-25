@@ -53,7 +53,7 @@ for i, idcode in enumerate(submission_df["id_code"]):
     submission_df.iloc[i,1]=np.argmax(prob)
     print("image {} : {}".format(i,pred_s1["classes"])) # just cheking s1 class
 
-submission_df.to_csv("submission.csv")
+submission_df.to_csv("submission.csv",index=False)
 
 """
 testing model with training data
