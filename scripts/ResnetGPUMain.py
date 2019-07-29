@@ -19,14 +19,10 @@ URL_BASE_PATH = r"..\data\processed\random-42"
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-main(use_tpu=False,
-     tpu=None,
-     gcp_project=None,
-     tpu_zone=None,
-     url_base_path=URL_BASE_PATH,
+main(url_base_path=URL_BASE_PATH,
      use_cache=False,
      model_dir=MODEL_DIR,
-     train_epochs=4,
+     train_epochs=8,
      train_batch_size=8,
      num_train_images=73030,#73030 73128? 1108*33*2, 36515*2 = 73030.
      epochs_per_loop=1,
@@ -39,4 +35,4 @@ main(use_tpu=False,
      momentum=0.9,
      weight_decay=1e-4,
      base_learning_rate=0.2,
-     warmup_epochs=5)
+     warmup_epochs=2)
