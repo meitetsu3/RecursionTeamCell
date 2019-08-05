@@ -85,7 +85,8 @@ def input_fn(tf_records_glob,
              shuffle_buffer=64):
 
     batch_size = params['batch_size']
-
+    tf.logging.info('batch_size:'.format(batch_size))
+    
     filenames_dataset = tf.data.Dataset.list_files(tf_records_glob)
 
     def fetch_images(filenames):

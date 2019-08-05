@@ -154,7 +154,6 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
         with tf.control_dependencies(update_ops):
             train_op = optimizer.minimize(loss, global_step)
 
-
         #gs_t = tf.reshape(global_step, [1])
         loss_t = tf.reshape(loss, [1])
         lr_t = tf.reshape(learning_rate, [1])
@@ -244,9 +243,11 @@ def main(url_base_path,
     use_bfloat16 = (tf_precision == 'bfloat16')
 
     train_glob = os.path.join(url_base_path, 'train', '*.tfrecord')
-
     tf.logging.info("Train glob: {}".format(train_glob))
 
+    eval_glob = os.path.join(url_base_path, 'train', '001.tfrecord')
+    tf.logging.info("eval glob: {}".format(eval_glob))
+    
     train_input_fn = functools.partial(rxinput.input_fn,
             input_fn_params=input_fn_params,
             tf_records_glob=train_glob,
@@ -254,21 +255,25 @@ def main(url_base_path,
             transpose_input=transpose_input,
             use_bfloat16=use_bfloat16)
 
-
-
+    eval_input_fn = functools.partial(rxinput.input_fn,
+            input_fn_params=input_fn_params,
+            tf_records_glob=eval_glob,
+            pixel_stats=GLOBAL_PIXEL_STATS,
+            transpose_input=transpose_input,
+            use_bfloat16=use_bfloat16)
+    
     tf.logging.info('Training for %d steps (%.2f epochs in total). Current'
                     ' step %d.', train_steps, train_steps / steps_per_epoch,
                     current_step)
 
     start_timestamp = time.time()  # This time will include compilation time
 
-    resnet_classifier.train(input_fn=train_input_fn, max_steps=train_steps)
-    
+    train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,max_steps=train_steps)
+    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn)
+    tf.estimator.train_and_evaluate(resnet_classifier,train_spec,eval_spec)    
     tf.logging.info('Finished training up to step %d. Elapsed seconds %d.',
                     train_steps, int(time.time() - start_timestamp))
 
-    train_metrics = resnet_classifier.evaluate(input_fn=train_input_fn)
-    print("train metrics: %r"% train_metrics)
 
     elapsed_time = int(time.time() - start_timestamp)
     tf.logging.info('Finished training up to step %d. Elapsed seconds %d.',

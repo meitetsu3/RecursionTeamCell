@@ -33,7 +33,7 @@ BATCH_NORM_EPSILON = 1e-5
 
 
 def batch_norm_relu(inputs, is_training, relu=True, init_zero=False,
-                    data_format='channels_first'):
+                    data_format='channels_last'):
   """Performs a batch normalization followed by a ReLU.
 
   Args:
@@ -75,7 +75,7 @@ def batch_norm_relu(inputs, is_training, relu=True, init_zero=False,
 
 
 def dropblock(net, is_training, keep_prob, dropblock_size,
-              data_format='channels_first'):
+              data_format='channels_last'):
   """DropBlock: a regularization method for convolutional neural networks.
 
   DropBlock is a form of structured dropout, where units in a contiguous
@@ -155,7 +155,7 @@ def dropblock(net, is_training, keep_prob, dropblock_size,
   return net
 
 
-def fixed_padding(inputs, kernel_size, data_format='channels_first'):
+def fixed_padding(inputs, kernel_size, data_format='channels_last'):
   """Pads the input along the spatial dimensions independently of input size.
 
   Args:
@@ -184,7 +184,7 @@ def fixed_padding(inputs, kernel_size, data_format='channels_first'):
 
 
 def conv2d_fixed_padding(inputs, filters, kernel_size, strides,
-                         data_format='channels_first'):
+                         data_format='channels_last'):
   """Strided 2-D convolution with explicit padding.
 
   The padding is consistent and is based only on `kernel_size`, not on the
@@ -212,7 +212,7 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides,
 
 
 def residual_block(inputs, filters, is_training, strides,
-                   use_projection=False, data_format='channels_first',
+                   use_projection=False, data_format='channels_last',
                    dropblock_keep_prob=None, dropblock_size=None):
   """Standard building block for residual networks with BN after convolutions.
 
@@ -262,7 +262,7 @@ def residual_block(inputs, filters, is_training, strides,
 
 
 def bottleneck_block(inputs, filters, is_training, strides,
-                     use_projection=False, data_format='channels_first',
+                     use_projection=False, data_format='channels_last',
                      dropblock_keep_prob=None, dropblock_size=None):
   """Bottleneck block variant for residual networks with BN after convolutions.
 
@@ -330,7 +330,7 @@ def bottleneck_block(inputs, filters, is_training, strides,
 
 
 def block_group(inputs, filters, block_fn, blocks, strides, is_training, name,
-                data_format='channels_first', dropblock_keep_prob=None,
+                data_format='channels_last', dropblock_keep_prob=None,
                 dropblock_size=None):
   """Creates one group of blocks for the ResNet model.
 
@@ -369,7 +369,7 @@ def block_group(inputs, filters, block_fn, blocks, strides, is_training, name,
 
 
 def resnet_v1_generator(block_fn, layers, num_classes,
-                        data_format='channels_first', dropblock_keep_probs=None,
+                        data_format='channels_last', dropblock_keep_probs=None,
                         dropblock_size=None):
   """Generator for ResNet v1 models.
 
@@ -454,7 +454,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
   return model
 
 
-def resnet_v1(resnet_depth, num_classes, data_format='channels_first',
+def resnet_v1(resnet_depth, num_classes, data_format='channels_last',
               dropblock_keep_probs=None, dropblock_size=None):
   """Returns the ResNet model for a given size and number of output classes."""
   model_params = {
