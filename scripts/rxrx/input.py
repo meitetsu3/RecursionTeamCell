@@ -27,18 +27,12 @@ from functools import partial, reduce
 import tensorflow as tf
 
 
-def set_shapes(transpose_input, batch_size, images, labels):
+def set_shapes(batch_size, images, labels):
     """Statically set the batch_size dimension."""
-    if transpose_input:
-        images.set_shape(images.get_shape().merge_with(
-            tf.TensorShape([None, None, None, batch_size])))
-        labels.set_shape(
-            labels.get_shape().merge_with(tf.TensorShape([batch_size])))
-    else:
-        images.set_shape(images.get_shape().merge_with(
-            tf.TensorShape([batch_size, None, None, None])))
-        labels.set_shape(
-            labels.get_shape().merge_with(tf.TensorShape([batch_size])))
+    images.set_shape(images.get_shape().merge_with(
+        tf.TensorShape([batch_size, None, None, None])))
+    labels.set_shape(
+        labels.get_shape().merge_with(tf.TensorShape([batch_size])))
 
     return images, labels
 
@@ -81,11 +75,10 @@ def input_fn(tf_records_glob,
              params=None,
              use_bfloat16=False,
              pixel_stats = None,
-             transpose_input=True,
              shuffle_buffer=64):
 
     batch_size = params['batch_size']
-    tf.logging.info('batch_size:'.format(batch_size))
+    tf.logging.info('batch_size:{}'.format(batch_size))
     
     filenames_dataset = tf.data.Dataset.list_files(tf_records_glob)
 
@@ -122,14 +115,8 @@ def input_fn(tf_records_glob,
             num_parallel_calls=input_fn_params['map_and_batch_num_parallel_calls'],
             drop_remainder=True))
 
-    # Transpose for performance on TPU
-    if transpose_input:
-        dataset = dataset.map(
-            lambda images, labels: (tf.transpose(images, [1, 2, 3, 0]), labels),
-            num_parallel_calls=input_fn_params['transpose_num_parallel_calls'])
-
     # Assign static batch size dimension
-    dataset = dataset.map(partial(set_shapes, transpose_input, batch_size))
+    dataset = dataset.map(partial(set_shapes, batch_size))
 
     # Prefetch overlaps in-feed with training
     dataset = dataset.prefetch(

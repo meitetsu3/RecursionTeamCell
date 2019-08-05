@@ -20,16 +20,13 @@ URL_BASE_PATH = r"../data/processed/random-42" #r"..\data\processed\random-42"
 tf.logging.set_verbosity(tf.logging.INFO)
 
 main(url_base_path=URL_BASE_PATH,
-     use_cache=False,
      model_dir=MODEL_DIR,
-     train_epochs=3,
+     train_epochs=5,
      train_batch_size=8,
      num_train_images=73030,#73030 73128? 1108*33*2, 36515*2 = 73030.
      epochs_per_loop=1,
      log_step_count_epochs=1,
-     num_cores=None,
      data_format='channels_last',
-     transpose_input=False,
      tf_precision='float32',
      n_classes=1108,
      momentum=0.9,

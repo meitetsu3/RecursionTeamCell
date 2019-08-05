@@ -54,7 +54,7 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
 
 
 def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
-                    data_format, transpose_input, train_batch_size,
+                    data_format, train_batch_size,
                     momentum, weight_decay, base_learning_rate,  warmup_epochs,
                     iterations_per_loop, model_dir, tf_precision,
                     resnet_depth):
@@ -80,11 +80,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
     # only if the network needs to be run on CPU since the pooling operations
     # are only supported on NHWC.
     if data_format == 'channels_first':
-        assert not transpose_input  # channels_first only for GPU
         features = tf.transpose(features, [0, 3, 1, 2])
-
-    if transpose_input and mode != tf.estimator.ModeKeys.PREDICT:
-        features = tf.transpose(features, [3, 0, 1, 2])  # HWCN to NHWC
 
     # This nested function allows us to avoid duplicating the logic which
     # builds the network, for different values of --precision.
@@ -182,16 +178,13 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
         eval_metric_ops=eval_metrics)
     
 def main(url_base_path,
-         use_cache,
          model_dir,
          train_epochs,
          train_batch_size,
          num_train_images,
          epochs_per_loop,
          log_step_count_epochs,
-         num_cores,
          data_format,
-         transpose_input,
          tf_precision,
          n_classes,
          momentum,
@@ -221,7 +214,6 @@ def main(url_base_path,
         n_classes=n_classes,
         num_train_images=num_train_images,
         data_format=data_format,
-        transpose_input=transpose_input,
         train_batch_size=train_batch_size,
         iterations_per_loop=iterations_per_loop,
         tf_precision=tf_precision,
@@ -252,14 +244,12 @@ def main(url_base_path,
             input_fn_params=input_fn_params,
             tf_records_glob=train_glob,
             pixel_stats=GLOBAL_PIXEL_STATS,
-            transpose_input=transpose_input,
             use_bfloat16=use_bfloat16)
 
     eval_input_fn = functools.partial(rxinput.input_fn,
             input_fn_params=input_fn_params,
             tf_records_glob=eval_glob,
             pixel_stats=GLOBAL_PIXEL_STATS,
-            transpose_input=transpose_input,
             use_bfloat16=use_bfloat16)
     
     tf.logging.info('Training for %d steps (%.2f epochs in total). Current'
@@ -294,7 +284,7 @@ def main(url_base_path,
 if __name__ == '__main__':
 
     p = argparse.ArgumentParser(description='Train ResNet on rxrx1')
-    p.add_argument('--use-cache', type=bool, default=None)
+    #p.add_argument('--use-cache', type=bool, default=None)
     # Dataset Parameters
     p.add_argument(
         '--url-base-path',
@@ -345,12 +335,12 @@ if __name__ == '__main__':
         default=64,
         help=('The number of epochs at '
               'which global step information is logged .'))
-    p.add_argument(
-        '--num-cores',
-        type=int,
-        default=8,
-        help=('Number of TPU cores. For a single TPU device, this is 8 because '
-              'each TPU has 4 chips each with 2 cores.'))
+#    p.add_argument(
+#        '--num-cores',
+#        type=int,
+#        default=8,
+#        help=('Number of TPU cores. For a single TPU device, this is 8 because '
+#              'each TPU has 4 chips each with 2 cores.'))
     p.add_argument(
         '--data-format',
         type=str,
@@ -362,11 +352,11 @@ if __name__ == '__main__':
         help=('A flag to override the data format used in the model. '
               'To run on CPU or TPU, channels_last should be used. '
               'For GPU, channels_first will improve performance.'))
-    p.add_argument(
-        '--transpose-input',
-        type=bool,
-        default=True,
-        help=('Use TPU double transpose optimization.'))
+#    p.add_argument(
+#        '--transpose-input',
+#        type=bool,
+#        default=True,
+#        help=('Use TPU double transpose optimization.'))
     p.add_argument(
         '--tf-precision',
         type=str,
