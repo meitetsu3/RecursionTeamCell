@@ -36,14 +36,14 @@ from rxrx.official_resnet import resnet_v1
 
 DEFAULT_INPUT_FN_PARAMS = {
     'tfrecord_dataset_buffer_size': 256,
-    'tfrecord_dataset_num_parallel_reads': None,
+    'tfrecord_dataset_num_parallel_reads': 2,
     'parallel_interleave_cycle_length': 32,
     'parallel_interleave_block_length': 1,
     'parallel_interleave_buffer_output_elements': None,
     'parallel_interleave_prefetch_input_elements': None,
     'map_and_batch_num_parallel_calls': 128,
     'transpose_num_parallel_calls': 128,
-    'prefetch_buffer_size': tf.contrib.data.AUTOTUNE,
+    'prefetch_buffer_size': tf.data.experimental.AUTOTUNE,
 }
 
 # The mean and stds for each of the channels
@@ -207,7 +207,7 @@ def main(url_base_path,
         save_summary_steps=iterations_per_loop,
         save_checkpoints_steps=iterations_per_loop,
         log_step_count_steps=log_step_count_steps,
-        eval_distribute = strategy)  # pylint: disable=line-too-long
+        train_distribute = strategy)  # pylint: disable=line-too-long
 
     model_fn = functools.partial(
         resnet_model_fn,
