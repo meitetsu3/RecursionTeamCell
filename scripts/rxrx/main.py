@@ -55,8 +55,8 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
 
 def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
                     data_format, train_batch_size,
-                    momentum, weight_decay, base_learning_rate,  warmup_epochs,
-                    iterations_per_loop, model_dir, tf_precision,
+                    momentum, weight_decay, base_learning_rate,
+                    model_dir, tf_precision,
                     resnet_depth):
     """The model_fn for ResNet to be used with Estimator.
 
@@ -126,19 +126,8 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
         # Compute the current epoch and associated learning rate from global_step.
         global_step = tf.train.get_global_step()
         steps_per_epoch = tf.cast(num_train_images / train_batch_size, tf.float32)
-        warmup_steps = warmup_epochs * steps_per_epoch
-
-
-        period = 10 * steps_per_epoch
-        learning_rate = tf.train.cosine_decay_restarts(base_learning_rate,
-                                                       global_step,
-                                                       period,
-                                                       t_mul=1.0,
-                                                       m_mul=1.0,
-                                                       alpha=0.0,
-                                                       name=None)
-
-
+        
+        learning_rate = tf.multiply(tf.constant(0.00001),tf.to_float(global_step))
 
         optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                                momentum=momentum,
@@ -182,30 +171,31 @@ def main(url_base_path,
          train_epochs,
          train_batch_size,
          num_train_images,
-         epochs_per_loop,
          log_step_count_epochs,
+         save_summary_steps,
          data_format,
          tf_precision,
          n_classes,
          momentum,
          weight_decay,
          base_learning_rate,
-         warmup_epochs,
          input_fn_params=DEFAULT_INPUT_FN_PARAMS,
          resnet_depth=50):
 
     steps_per_epoch = (num_train_images // train_batch_size)
     train_steps = steps_per_epoch * train_epochs
     current_step = estimator._load_global_step_from_checkpoint_dir(model_dir) # pylint: disable=protected-access,line-too-long
-    iterations_per_loop = steps_per_epoch * epochs_per_loop
-    log_step_count_steps = steps_per_epoch * log_step_count_epochs
-
+    if log_step_count_epochs > 0 :
+        log_step_count_steps = steps_per_epoch * log_step_count_epochs
+    else:
+        log_step_count_steps = 1
+        
     strategy = tf.distribute.MirroredStrategy()
     
     config = tf.estimator.RunConfig(
         model_dir=model_dir,
-        save_summary_steps=iterations_per_loop,
-        save_checkpoints_steps=iterations_per_loop,
+        save_summary_steps = save_summary_steps,
+        save_checkpoints_steps=steps_per_epoch,
         log_step_count_steps=log_step_count_steps,
         train_distribute = strategy)  # pylint: disable=line-too-long
 
@@ -215,12 +205,10 @@ def main(url_base_path,
         num_train_images=num_train_images,
         data_format=data_format,
         train_batch_size=train_batch_size,
-        iterations_per_loop=iterations_per_loop,
         tf_precision=tf_precision,
         momentum=momentum,
         weight_decay=weight_decay,
         base_learning_rate=base_learning_rate,
-        warmup_epochs=warmup_epochs,
         model_dir=model_dir,
         resnet_depth=resnet_depth)
 
@@ -231,26 +219,21 @@ def main(url_base_path,
         config=config,
         params=params)
 
-
-    use_bfloat16 = (tf_precision == 'bfloat16')
-
     train_glob = os.path.join(url_base_path, 'train', '*.tfrecord')
     tf.logging.info("Train glob: {}".format(train_glob))
 
-    eval_glob = os.path.join(url_base_path, 'train', '001.tfrecord')
+    eval_glob = os.path.join(url_base_path, 'val', '001.tfrecord')
     tf.logging.info("eval glob: {}".format(eval_glob))
     
     train_input_fn = functools.partial(rxinput.input_fn,
             input_fn_params=input_fn_params,
             tf_records_glob=train_glob,
-            pixel_stats=GLOBAL_PIXEL_STATS,
-            use_bfloat16=use_bfloat16)
+            pixel_stats=GLOBAL_PIXEL_STATS)
 
     eval_input_fn = functools.partial(rxinput.input_fn,
             input_fn_params=input_fn_params,
             tf_records_glob=eval_glob,
-            pixel_stats=GLOBAL_PIXEL_STATS,
-            use_bfloat16=use_bfloat16)
+            pixel_stats=GLOBAL_PIXEL_STATS)
     
     tf.logging.info('Training for %d steps (%.2f epochs in total). Current'
                     ' step %d.', train_steps, train_steps / steps_per_epoch,
@@ -323,12 +306,12 @@ if __name__ == '__main__':
         default=1108,
         help=('The number of label classes - typically will be 1108 '
               'since there are 1108 experimental siRNA classes.'))
-    p.add_argument(
-        '--epochs-per-loop',
-        type=int,
-        default=1,
-        help=('The number of steps to run on TPU before outfeeding metrics '
-              'to the CPU. Larger values will speed up training.'))
+#    p.add_argument(
+#        '--epochs-per-loop',
+#        type=int,
+#        default=1,
+#        help=('The number of steps to run on TPU before outfeeding metrics '
+#              'to the CPU. Larger values will speed up training.'))
     p.add_argument(
         '--log-step-count-epochs',
         type=int,

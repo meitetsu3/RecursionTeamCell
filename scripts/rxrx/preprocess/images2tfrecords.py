@@ -36,7 +36,7 @@ def int64_feature(value):
 
 def float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(
-        value=ruitls.wrap(value)))
+        value=rutils.wrap(value)))
 
 
 ### Conversion to TFExample and TFRecord logic
@@ -120,7 +120,8 @@ def _correct_sirna_dtype(row):
 def _random_partition(metadata_df,
                       dest_path,
                       sites_per_tfrecord=308,
-                      random_seed=42):
+                      random_seed=42,
+                      control = False):
     """
     Randomly partitions each dataset into multiple TFRecords.
     """
@@ -136,9 +137,12 @@ def _random_partition(metadata_df,
               .sample(frac=1.0, random_state=rs_dict[dataset]))
         rows = [_correct_sirna_dtype(row) for row in df.to_dict(orient='row')]
         sites_for_files = t.partition_all(sites_per_tfrecord, rows)
-        dataset_path = os.path.join(dest_path, 'random-{}'.format(random_seed), dataset)
+        if control:
+            dataset_path = os.path.join(dest_path, 'random-{}'.format(random_seed), "Ctrl")
+        else:
+            dataset_path = os.path.join(dest_path, 'random-{}'.format(random_seed), dataset)
         for file_num, sites in enumerate(sites_for_files, 1):
-            dest_file = os.path.join(dataset_path, "{:03d}.tfrecord".format(file_num))
+            dest_file = os.path.join(dataset_path, dataset+"{:03d}.tfrecord".format(file_num))
             to_pack.append({'dest_path': dest_file, 'sites': sites})
     return to_pack
 
@@ -231,6 +235,36 @@ def pack_tfrecords(images_path,
         print('Distributing {} on {}'.format(len(to_pack), runner))
         run_on_dataflow(to_pack, dest_path, images_path, channels, runner, project)
         return None
+
+def pack_tfrecords_ctrl(images_path,
+                   metadata_df,
+                   num_workers,
+                   dest_path,
+                   channels=DEFAULT_CHANNELS,
+                   sites_per_tfrecord=300,
+                   random_seeds=[42],
+                   ):
+ 
+    to_pack = []
+    for random_seed in random_seeds:
+        to_pack += _random_partition(
+            metadata_df,
+            dest_path,
+            random_seed=random_seed,
+            sites_per_tfrecord=sites_per_tfrecord,
+            control=True)
+    
+    import dask
+    import dask.bag
+
+    print('Distributing {} on dask'.format(len(to_pack)))
+    to_pack_bag = dask.bag.from_sequence(to_pack, npartitions=len(to_pack))
+    (to_pack_bag
+     .map(lambda kw: _pack_tfrecord(base_path=images_path,
+                                    channels=channels,
+                                    **kw))
+     .compute(num_workers=num_workers))
+    return [p['dest_path'] for p in to_pack]
 
 
 def run_on_dataflow(to_pack, dest_path, images_path, channels, runner, project):

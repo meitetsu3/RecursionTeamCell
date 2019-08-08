@@ -36,7 +36,7 @@ def set_shapes(batch_size, images, labels):
 
     return images, labels
 
-def parse_example(value, use_bfloat16=True, pixel_stats=None):
+def parse_example(value,pixel_stats=None):
 
     keys_to_features = {
         'image': tf.FixedLenFeature((), tf.string),
@@ -59,9 +59,6 @@ def parse_example(value, use_bfloat16=True, pixel_stats=None):
         mean, std = pixel_stats
         image = (tf.cast(image, tf.float32) - mean) / std
 
-    if use_bfloat16:
-        image = tf.image.convert_image_dtype(image, dtype=tf.bfloat16)
-
     label = parsed["sirna"]
 
     return image, label
@@ -73,7 +70,6 @@ DEFAULT_PARAMS = dict(batch_size=512)
 def input_fn(tf_records_glob,
              input_fn_params,
              params=None,
-             use_bfloat16=False,
              pixel_stats = None,
              shuffle_buffer=64):
 
@@ -109,7 +105,6 @@ def input_fn(tf_records_glob,
     dataset = images_dataset.apply(
         tf.contrib.data.map_and_batch(
             lambda value: parse_example(value,
-                                        use_bfloat16=use_bfloat16,
                                         pixel_stats=pixel_stats),
             batch_size=batch_size,
             num_parallel_calls=input_fn_params['map_and_batch_num_parallel_calls'],
