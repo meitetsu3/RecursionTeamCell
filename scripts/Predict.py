@@ -14,18 +14,15 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
                                 10.45369445,  5.49959796, 9.81545561]),
                        np.array([7.95876312, 12.17305868, 5.86172946,
                                  7.83451711, 4.701167, 5.43130431]))
-test_df = pd.read_csv(r"../data/raw/test/test.csv")
-submission_df = pd.read_csv(r"../data/raw/sample_submission.csv")
+test_df = pd.read_csv(r"../data/metadata/test.csv")
+submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
 
-export_dir = r"../model/saved_model/1565135731"
+export_dir = r"../model/Resnet50-bs16-CLR1_1-DC4/saved_model/1565537204"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
 # 19897 records (both on submission and test.csv)
-
-test_df = pd.read_csv(r"../data/raw/test/test.csv")
-submission_df = pd.read_csv(r"../data/raw/sample_submission.csv")
 
 # double checking the ids in test.csv and submission.csv are ordered the same.
 # they are the same.

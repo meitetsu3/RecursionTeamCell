@@ -53,11 +53,9 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
                                  7.83451711, 4.701167, 5.43130431]))
 
 
-def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
-                    data_format, train_batch_size,
-                    momentum, weight_decay, base_learning_rate,
-                    model_dir, tf_precision,
-                    resnet_depth):
+def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,train_steps,
+                    data_format, train_batch_size, weight_decay, min_learning_rate, max_learning_rate,
+                    model_dir,resnet_depth):
     """The model_fn for ResNet to be used with Estimator.
 
     Args:
@@ -92,8 +90,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
         return network(
             inputs=features, is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
-    if tf_precision == 'float32':
-        logits = build_network()
+    logits = build_network()
 
     if mode == tf.estimator.ModeKeys.PREDICT:
         predictions = {
@@ -125,13 +122,19 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
     if mode == tf.estimator.ModeKeys.TRAIN:
         # Compute the current epoch and associated learning rate from global_step.
         global_step = tf.train.get_global_step()
-        steps_per_epoch = tf.cast(num_train_images / train_batch_size, tf.float32)
         
-        learning_rate = tf.multiply(tf.constant(0.00001),tf.to_float(global_step))
+        lrrange = max_learning_rate-min_learning_rate
+        mid_step = 0.45*train_steps
+        anneal_step = 0.9*train_steps
+        global_step_float = tf.cast(global_step,tf.float32)
+        
+        learning_rate = tf.cond(global_step_float < mid_step,lambda:min_learning_rate+global_step_float*lrrange/mid_step
+                ,lambda:tf.cond(global_step_float < anneal_step,lambda:min_learning_rate+2*lrrange-global_step_float*lrrange/mid_step
+                         ,lambda:min_learning_rate-global_step_float*0.9*min_learning_rate/(0.1*train_steps)))
 
-        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                               momentum=momentum,
-                                               use_nesterov=True)
+        tf.logging.info("learning_rate: {}".format(learning_rate))
+        #learning_rate = tf.cast(learning_rate,tf.float32)        
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
 
         # Batch normalization requires UPDATE_OPS to be added as a dependency to
         # the train operation.
@@ -174,21 +177,17 @@ def main(url_base_path,
          log_step_count_epochs,
          save_summary_steps,
          data_format,
-         tf_precision,
          n_classes,
-         momentum,
          weight_decay,
-         base_learning_rate,
+         min_learning_rate,
+         max_learning_rate,
          input_fn_params=DEFAULT_INPUT_FN_PARAMS,
          resnet_depth=50):
 
     steps_per_epoch = (num_train_images // train_batch_size)
     train_steps = steps_per_epoch * train_epochs
     current_step = estimator._load_global_step_from_checkpoint_dir(model_dir) # pylint: disable=protected-access,line-too-long
-    if log_step_count_epochs > 0 :
-        log_step_count_steps = steps_per_epoch * log_step_count_epochs
-    else:
-        log_step_count_steps = 1
+    log_step_count_steps = steps_per_epoch * log_step_count_epochs
         
     strategy = tf.distribute.MirroredStrategy()
     
@@ -203,12 +202,12 @@ def main(url_base_path,
         resnet_model_fn,
         n_classes=n_classes,
         num_train_images=num_train_images,
+        train_steps = train_steps,
         data_format=data_format,
         train_batch_size=train_batch_size,
-        tf_precision=tf_precision,
-        momentum=momentum,
         weight_decay=weight_decay,
-        base_learning_rate=base_learning_rate,
+        min_learning_rate=min_learning_rate,
+        max_learning_rate=max_learning_rate,
         model_dir=model_dir,
         resnet_depth=resnet_depth)
 
@@ -222,7 +221,7 @@ def main(url_base_path,
     train_glob = os.path.join(url_base_path, 'train', '*.tfrecord')
     tf.logging.info("Train glob: {}".format(train_glob))
 
-    eval_glob = os.path.join(url_base_path, 'val', '001.tfrecord')
+    eval_glob = os.path.join(url_base_path, 'train', '001.tfrecord')
     tf.logging.info("eval glob: {}".format(eval_glob))
     
     train_input_fn = functools.partial(rxinput.input_fn,
