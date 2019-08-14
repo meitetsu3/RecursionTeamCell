@@ -18,7 +18,7 @@ test_df = pd.read_csv(r"../data/metadata/test.csv")
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
 
-export_dir = r"../model/Resnet50-bs16-CLR1_1-DC4/saved_model/1565537204"
+export_dir = r"../model/Resnet50-bs16-CLR01_06-DC4/saved_model/1565720609"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
@@ -50,7 +50,7 @@ for i, idcode in enumerate(submission_df["id_code"]):
     submission_df.iloc[i,1]=np.argmax(prob)
     print("image {} : {}".format(i,pred_s1["classes"])) # just cheking s1 class
 
-submission_df.to_csv("submission.csv",index=False)
+submission_df.to_csv("../submission.csv",index=False)
 
 """
 testing model with training data

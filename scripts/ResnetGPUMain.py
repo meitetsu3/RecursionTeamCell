@@ -11,9 +11,9 @@ import sys
 import tensorflow as tf
 from rxrx.main import main
 
-!nvidia-smi
+#!nvidia-smi
 
-MODEL_DIR = r"../model/Resnet50-bs20-CLR1_06-DC4"
+MODEL_DIR = r"../model/Resnet50-bs16-CLR01_06-DC4"
 URL_BASE_PATH = r"../data/processed/random-42"  #r"../data/processed/controls/random-42/Ctrl
 
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -28,5 +28,5 @@ main(url_base_path=URL_BASE_PATH,
      data_format='channels_last',
      n_classes=1108,
      weight_decay=1e-4,
-     min_learning_rate=0.1,
+     min_learning_rate=0.01,
      max_learning_rate=0.6)

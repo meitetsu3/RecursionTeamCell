@@ -130,7 +130,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
         
         learning_rate = tf.cond(global_step_float < mid_step,lambda:min_learning_rate+global_step_float*lrrange/mid_step
                 ,lambda:tf.cond(global_step_float < anneal_step,lambda:min_learning_rate+2*lrrange-global_step_float*lrrange/mid_step
-                         ,lambda:min_learning_rate-global_step_float*0.9*min_learning_rate/(0.1*train_steps)))
+                         ,lambda:9.1*min_learning_rate-global_step_float*9*min_learning_rate/train_steps))
 
         tf.logging.info("learning_rate: {}".format(learning_rate))
         #learning_rate = tf.cast(learning_rate,tf.float32)        
