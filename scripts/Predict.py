@@ -18,7 +18,7 @@ test_df = pd.read_csv(r"../data/metadata/test.csv")
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
 
-export_dir = r"../model/Resnet50-bs16-CLR01_06-DC4/saved_model/1565720609"
+export_dir = r"../model/Resnet50-bs20-CLR1_05-DC4/saved_model/1565792414"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
