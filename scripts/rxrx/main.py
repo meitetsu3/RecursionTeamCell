@@ -53,7 +53,7 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
                                  7.83451711, 4.701167, 5.43130431]))
 
 
-def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,train_steps,
+def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,train_steps,
                     data_format, train_batch_size, weight_decay, min_learning_rate, max_learning_rate,
                     model_dir,resnet_depth):
     """The model_fn for ResNet to be used with Estimator.
@@ -71,14 +71,15 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
         A `EstimatorSpec` for the model
     """
     if isinstance(features, dict):
-        features = features['feature']
+        image = features['image']
+        cell = features['cell']
 
     # In most cases, the default data format NCHW instead of NHWC should be
     # used for a significant performance boost on GPU. NHWC should be used
     # only if the network needs to be run on CPU since the pooling operations
     # are only supported on NHWC.
     if data_format == 'channels_first':
-        features = tf.transpose(features, [0, 3, 1, 2])
+        image = tf.transpose(image, [0, 3, 1, 2])
 
     # This nested function allows us to avoid duplicating the logic which
     # builds the network, for different values of --precision.
@@ -88,7 +89,7 @@ def resnet_model_fn(features, labels, mode, params, n_classes, num_train_images,
             num_classes=n_classes,
             data_format=data_format)
         return network(
-            inputs=features, is_training=(mode == tf.estimator.ModeKeys.TRAIN))
+            inputs=image, is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
     logits = build_network()
 
@@ -221,7 +222,9 @@ def main(url_base_path,
     train_glob = os.path.join(url_base_path, 'train', '*.tfrecord')
     tf.logging.info("Train glob: {}".format(train_glob))
 
-    eval_glob = os.path.join(url_base_path, 'train', '001.tfrecord')
+    eval_glob = os.path.join(url_base_path, 'val', '*.tfrecord')
+    #002,012,040,test008, train016
+    
     tf.logging.info("eval glob: {}".format(eval_glob))
     
     train_input_fn = functools.partial(rxinput.input_fn,

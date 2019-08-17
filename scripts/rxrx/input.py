@@ -27,14 +27,16 @@ from functools import partial, reduce
 import tensorflow as tf
 
 
-def set_shapes(batch_size, images, labels):
+def set_shapes(batch_size, feature, labels):
     """Statically set the batch_size dimension."""
-    images.set_shape(images.get_shape().merge_with(
-        tf.TensorShape([batch_size, None, None, None])))
     labels.set_shape(
         labels.get_shape().merge_with(tf.TensorShape([batch_size])))
+    feature["image"].set_shape(feature["image"].get_shape().merge_with(
+        tf.TensorShape([batch_size, None, None, None])))
+    feature["cell"].set_shape(
+        feature["cell"].get_shape().merge_with(tf.TensorShape([batch_size])))
+    return feature, labels
 
-    return images, labels
 
 def parse_example(value,pixel_stats=None):
 
@@ -60,8 +62,9 @@ def parse_example(value,pixel_stats=None):
         image = (tf.cast(image, tf.float32) - mean) / std
 
     label = parsed["sirna"]
+    cell = parsed["cell_type"]
 
-    return image, label
+    return {"image":image,"cell":cell}, label
 
 
 DEFAULT_PARAMS = dict(batch_size=512)
