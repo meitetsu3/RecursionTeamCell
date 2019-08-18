@@ -52,11 +52,14 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
                        np.array([7.95876312, 12.17305868, 5.86172946,
                                  7.83451711, 4.701167, 5.43130431]))
 
-
 def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,train_steps,
                     data_format, train_batch_size, weight_decay, min_learning_rate, max_learning_rate,
                     model_dir,resnet_depth):
-    """The model_fn for ResNet to be used with Estimator.
+    """The model_fn for ResNet to be used wCELL_TYPES = {"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
+#{b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+CELL_keys = list(CELL_TYPES.keys())
+CELL_values = [CELL_TYPES[k] for k in CELL_keys]
+ith Estimator.
 
     Args:
     features: `Tensor` of batched images
@@ -73,7 +76,10 @@ def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,tr
     if isinstance(features, dict):
         image = features['image']
         cell = features['cell']
+        one_hot_cell = tf.one_hot(cell, 4)
 
+
+    
     # In most cases, the default data format NCHW instead of NHWC should be
     # used for a significant performance boost on GPU. NHWC should be used
     # only if the network needs to be run on CPU since the pooling operations
@@ -89,7 +95,7 @@ def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,tr
             num_classes=n_classes,
             data_format=data_format)
         return network(
-            inputs=image, is_training=(mode == tf.estimator.ModeKeys.TRAIN))
+            inputs=image, cell = one_hot_cell,is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
     logits = build_network()
 
@@ -258,7 +264,8 @@ def main(url_base_path,
 
     def serving_input_receiver_fn():
         features = {
-          'feature': tf.placeholder(dtype=tf.float32, shape=[None, 512, 512, 6]),
+          'image': tf.placeholder(dtype=tf.float32, shape=[None, 512, 512, 6]),
+          'cell': tf.placeholder(dtype=tf.int32, shape=[None])
         }
         receiver_tensors = features
         return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)

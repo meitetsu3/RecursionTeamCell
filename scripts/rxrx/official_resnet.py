@@ -32,6 +32,7 @@ BATCH_NORM_DECAY = 0.9
 BATCH_NORM_EPSILON = 1e-5
 
 
+
 def batch_norm_relu(inputs, is_training, relu=True, init_zero=False,
                     data_format='channels_first'):
   """Performs a batch normalization followed by a ReLU.
@@ -233,7 +234,11 @@ def residual_block(inputs, filters, is_training, strides,
       blocks
     dropblock_size: unused; needed to give method same signature as other
       blocks
-  Returns:
+  Returns:CELL_TYPES = {b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}#{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
+#{b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+CELL_keys = list(CELL_TYPES.keys())
+CELL_values = [CELL_TYPES[k] for k in CELL_keys]
+
     The output `Tensor` of the block.
   """
   del dropblock_keep_prob
@@ -332,7 +337,11 @@ def bottleneck_block(inputs, filters, is_training, strides,
 def block_group(inputs, filters, block_fn, blocks, strides, is_training, name,
                 data_format='channels_first', dropblock_keep_prob=None,
                 dropblock_size=None):
-  """Creates one group of blocks for the ResNet model.
+  """Creates one group of blocks for the CELL_TYPES = {b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}#{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
+#{b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+CELL_keys = list(CELL_TYPES.keys())
+CELL_values = [CELL_TYPES[k] for k in CELL_keys]
+ResNet model.
 
   Args:
     inputs: `Tensor` of size `[batch, channels, height, width]`.
@@ -346,7 +355,11 @@ def block_group(inputs, filters, block_fn, blocks, strides, is_training, name,
     data_format: `str` either "channels_first" for `[batch, channels, height,
         width]` or "channels_last for `[batch, height, width, channels]`.
     dropblock_keep_prob: `float` or `Tensor` keep_prob parameter of DropBlock.
-        "None" means no DropBlock.
+        "None" means no DropBlock.CELL_TYPES = {b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}#{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
+#{b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+CELL_keys = list(CELL_TYPES.keys())
+CELL_values = [CELL_TYPES[k] for k in CELL_keys]
+
     dropblock_size: `int` size parameter of DropBlock. Will not be used if
         dropblock_keep_prob is "None".
 
@@ -400,7 +413,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
                     list) or len(dropblock_keep_probs) != 4:
     raise ValueError('dropblock_keep_probs is not valid:', dropblock_keep_probs)
 
-  def model(inputs, is_training):
+  def model(inputs, cell, is_training):
     """Creation of the model graph."""
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=64, kernel_size=7, strides=2,
@@ -443,6 +456,9 @@ def resnet_v1_generator(block_fn, layers, num_classes,
     inputs = tf.identity(inputs, 'final_avg_pool')
     inputs = tf.reshape(
         inputs, [-1, 2048 if block_fn is bottleneck_block else 512])
+    
+    inputs = tf.concat([inputs, cell], 1)
+    
     inputs = tf.layers.dense(
         inputs=inputs,
         units=num_classes,
@@ -471,6 +487,6 @@ def resnet_v1(resnet_depth, num_classes, data_format='channels_first',
 
   params = model_params[resnet_depth]
   return resnet_v1_generator(
-      params['block'], params['layers'], num_classes,
+      params['block'], params['layers'], num_classes, 
       dropblock_keep_probs=dropblock_keep_probs, dropblock_size=dropblock_size,
       data_format=data_format)

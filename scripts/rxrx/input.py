@@ -25,8 +25,12 @@ from __future__ import print_function
 from functools import partial, reduce
 
 import tensorflow as tf
+CELL_TYPES = {b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+#{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
+CELL_keys = list(CELL_TYPES.keys())
+CELL_values = [CELL_TYPES[k] for k in CELL_keys]
 
-
+        
 def set_shapes(batch_size, feature, labels):
     """Statically set the batch_size dimension."""
     labels.set_shape(
@@ -62,8 +66,11 @@ def parse_example(value,pixel_stats=None):
         image = (tf.cast(image, tf.float32) - mean) / std
 
     label = parsed["sirna"]
-    cell = parsed["cell_type"]
-
+    Cell_table = tf.contrib.lookup.HashTable(
+            tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int32), -1
+            )
+    cell = Cell_table.lookup(parsed["cell_type"])
+        
     return {"image":image,"cell":cell}, label
 
 
