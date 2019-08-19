@@ -21,7 +21,7 @@ test_df = pd.read_csv(r"../data/metadata/test.csv")
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
 
-export_dir = r"../model/Resnet50-bs16-ep30-CLR01_1-DC4-Cell/saved_model/1566108315"
+export_dir = r"../model/Resnet50-bs16-ep24-CLR01_05-DC4-Cell/saved_model/1566171390"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
@@ -49,6 +49,7 @@ for i, idcode in enumerate(submission_df["id_code"]):
         img_s2[:,:,c] = (imread(imgpath_s2)-GLOBAL_PIXEL_STATS[0][c])/GLOBAL_PIXEL_STATS[1][c]
     #,'cell':CELL_TYPES[idcode[0:idcode.find("-")]
     cell = np.reshape(CELL_TYPES[idcode[0:idcode.find("-")]],(1,))
+    print("cell : {}".format(cell)) # just cheking s1 class
     pred_s1 = predict_fn({'image': np.reshape(img_s1,(1,512,512,6)),'cell':cell})
     pred_s2 = predict_fn({'image': np.reshape(img_s2,(1,512,512,6)),'cell':cell})
     prob = pred_s1["probabilities"]+pred_s2["probabilities"]
