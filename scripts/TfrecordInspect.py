@@ -6,10 +6,25 @@ Created on Fri Aug 16 22:28:52 2019
 @author: user1
 """
 
-import tensorflow as tf
+import pandas as pd
 import numpy as np
+
+trainpd_df = pd.read_csv(r"../train_prediction.csv")
+trainpd_df['score'] = np.where(trainpd_df['sirna']==trainpd_df['pred'],1,0)
+
+trainpd_df.groupby('experiment').mean()
+
+
+import tensorflow as tf
+
 import matplotlib.pyplot as plt
+
 tf_record = '../data/processed/random-42/train/001.tfrecord' 
+
+for example in tf.python_io.tf_record_iterator(tf_record):
+    print(tf.train.Example.FromString(example))
+    
+    
 keys_to_features = {
     'image': tf.FixedLenFeature((), tf.string),
     'well': tf.FixedLenFeature((), tf.string),

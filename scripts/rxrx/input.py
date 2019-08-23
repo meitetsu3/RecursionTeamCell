@@ -39,6 +39,8 @@ def set_shapes(batch_size, feature, labels):
         tf.TensorShape([batch_size, None, None, None])))
     feature["cell"].set_shape(
         feature["cell"].get_shape().merge_with(tf.TensorShape([batch_size])))
+    feature["plate"].set_shape(
+        feature["plate"].get_shape().merge_with(tf.TensorShape([batch_size])))
     return feature, labels
 
 
@@ -70,8 +72,8 @@ def parse_example(value,pixel_stats=None):
             tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int32), -1
             )
     cell = Cell_table.lookup(parsed["cell_type"])
-        
-    return {"image":image,"cell":cell}, label
+    plate = parsed["plate"]    
+    return {"image":image,"cell":cell,"plate":plate}, label
 
 
 DEFAULT_PARAMS = dict(batch_size=512)

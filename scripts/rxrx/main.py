@@ -76,7 +76,9 @@ ith Estimator.
     if isinstance(features, dict):
         image = features['image']
         cell = features['cell']
+        plate = features['plate']
         one_hot_cell = tf.one_hot(cell, 4)
+        one_hot_plate = tf.one_hot(plate-1, 4)
 
 
     
@@ -265,7 +267,8 @@ def main(url_base_path,
     def serving_input_receiver_fn():
         features = {
           'image': tf.placeholder(dtype=tf.float32, shape=[None, 512, 512, 6]),
-          'cell': tf.placeholder(dtype=tf.int32, shape=[None])
+          'cell': tf.placeholder(dtype=tf.int32, shape=[None]),
+          'plate': tf.placeholder(dtype=tf.int32, shape=[None])
         }
         receiver_tensors = features
         return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
