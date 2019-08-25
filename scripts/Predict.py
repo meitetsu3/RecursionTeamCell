@@ -17,12 +17,14 @@ GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
 
 CELL_TYPES = {'HEPG2':0,'HUVEC':1,'RPE':2,'U2OS':3}
 
+batchval_df = pd.read_csv(r"./BatchValLookup.csv")
+
 test_df = pd.read_csv(r"../data/metadata/test.csv")
 train_df = pd.read_csv(r"../data/metadata/train.csv")
 train_df["pred"] = np.nan
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet50-bs16-ep20-CLR01_05-DC4-Cell-ValHO8plates/saved_model/1566388801"
+export_dir = r"../model/Resnet50-bs16-ep20-CLR01_04-DC4-CellPlateExp-ValCT03/saved_model/1566708068"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
@@ -37,8 +39,8 @@ for i, idcode in enumerate(test_df["id_code"]):
 
 # Use sample_submission to get images
 #imagbase = r"../data/raw/test/"
-imagbase = r"../data/raw/train/"
-tgt = train_df # checking on train
+imagbase = r"../data/raw/test/"
+tgt = submission_df # checking on train train_df
 image_shape = [512, 512, 6]
 img_s1 = np.zeros(image_shape,dtype=np.float32)
 img_s2 = np.zeros(image_shape,dtype=np.float32)
@@ -52,14 +54,17 @@ for i, idcode in enumerate(tgt["id_code"]):
         img_s2[:,:,c] = (imread(imgpath_s2,format='png')-GLOBAL_PIXEL_STATS[0][c])/GLOBAL_PIXEL_STATS[1][c]
     #,'cell':CELL_TYPES[idcode[0:idcode.find("-")]
     cell = np.reshape(CELL_TYPES[idcode[0:idcode.find("-")]],(1,))
-    print("cell : {}".format(cell)) # just cheking s1 class
-    pred_s1 = predict_fn({'image': np.reshape(img_s1,(1,512,512,6)),'cell':cell})
-    pred_s2 = predict_fn({'image': np.reshape(img_s2,(1,512,512,6)),'cell':cell})
+    plate = np.reshape(int(idcode[idcode.find("_")+1:idcode.find("_")+2]),(1,))
+    experiment = np.array(batchval_df[batchval_df['key'].str.contains(idcode[0:idcode.find("_")])]['batch_val'])
+    experiment = np.reshape(experiment,(1,6))
+    print("cell : {},plate: {}".format(cell,plate)) # just cheking s1 class
+    pred_s1 = predict_fn({'image': np.reshape(img_s1,(1,512,512,6)),'cell':cell,'plate':plate,'experiment':experiment})
+    pred_s2 = predict_fn({'image': np.reshape(img_s2,(1,512,512,6)),'cell':cell,'plate':plate,'experiment':experiment})
     prob = pred_s1["probabilities"]+pred_s2["probabilities"]
-    tgt.iloc[i,5]=np.argmax(prob) # train. for submission iloc[i,1]=np.argmax(prob), train 5
+    tgt.iloc[i,1]=np.argmax(prob) # train. for submission iloc[i,1]=np.argmax(prob), train 5
     print("image {} : {}".format(i,pred_s1["classes"])) # just cheking s1 class
 
-tgt.to_csv("../train_prediction.csv",index=False)
+tgt.to_csv("../submit_prediction.csv",index=False)
 
 
 """

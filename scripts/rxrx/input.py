@@ -23,14 +23,18 @@ from __future__ import division
 from __future__ import print_function
 
 from functools import partial, reduce
-
+import pandas as pd
+import numpy as np
 import tensorflow as tf
-CELL_TYPES = {b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+CELL_TYPES = {'HEPG2':0,'HUVEC':1,'RPE':2,'U2OS':3}
 #{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
 CELL_keys = list(CELL_TYPES.keys())
 CELL_values = [CELL_TYPES[k] for k in CELL_keys]
 
-        
+batchval_df = pd.read_csv(r"./BatchValLookup.csv")
+EXP_keys = list(batchval_df['key'])
+EXP_values = [np.float32(batchval_df[batchval_df['key']==k]['batch_val'])[0] for k in EXP_keys]        
+
 def set_shapes(batch_size, feature, labels):
     """Statically set the batch_size dimension."""
     labels.set_shape(
@@ -41,6 +45,8 @@ def set_shapes(batch_size, feature, labels):
         feature["cell"].get_shape().merge_with(tf.TensorShape([batch_size])))
     feature["plate"].set_shape(
         feature["plate"].get_shape().merge_with(tf.TensorShape([batch_size])))
+    feature["experiment"].set_shape(feature["experiment"].get_shape().merge_with(
+        tf.TensorShape([batch_size, None])))
     return feature, labels
 
 
@@ -71,9 +77,19 @@ def parse_example(value,pixel_stats=None):
     Cell_table = tf.contrib.lookup.HashTable(
             tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int32), -1
             )
+    Exp_table = tf.contrib.lookup.HashTable(
+            tf.contrib.lookup.KeyValueTensorInitializer(EXP_keys, EXP_values, key_dtype=tf.string, value_dtype=tf.float32), -1
+            )    
     cell = Cell_table.lookup(parsed["cell_type"])
     plate = parsed["plate"]    
-    return {"image":image,"cell":cell,"plate":plate}, label
+    experiment = [Exp_table.lookup(parsed["experiment"]+'1'),
+                                   Exp_table.lookup(parsed["experiment"]+'2'),
+                                   Exp_table.lookup(parsed["experiment"]+'3'),
+                                   Exp_table.lookup(parsed["experiment"]+'4'),
+                                   Exp_table.lookup(parsed["experiment"]+'5'),
+                                   Exp_table.lookup(parsed["experiment"]+'6')]
+                                                 
+    return {"image":image,"cell":cell,"plate":plate,"experiment":experiment}, label
 
 
 DEFAULT_PARAMS = dict(batch_size=512)

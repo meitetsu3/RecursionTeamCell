@@ -77,6 +77,7 @@ ith Estimator.
         image = features['image']
         cell = features['cell']
         plate = features['plate']
+        experiment = features['experiment']
         one_hot_cell = tf.one_hot(cell, 4)
         one_hot_plate = tf.one_hot(plate-1, 4)
 
@@ -97,7 +98,8 @@ ith Estimator.
             num_classes=n_classes,
             data_format=data_format)
         return network(
-            inputs=image, cell = one_hot_cell,is_training=(mode == tf.estimator.ModeKeys.TRAIN))
+            inputs=image, cell = one_hot_cell, plate = one_hot_plate, experiment=experiment,
+            is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
     logits = build_network()
 
@@ -268,7 +270,8 @@ def main(url_base_path,
         features = {
           'image': tf.placeholder(dtype=tf.float32, shape=[None, 512, 512, 6]),
           'cell': tf.placeholder(dtype=tf.int32, shape=[None]),
-          'plate': tf.placeholder(dtype=tf.int32, shape=[None])
+          'plate': tf.placeholder(dtype=tf.int32, shape=[None]),
+          'experiment': tf.placeholder(dtype=tf.float32, shape=[None,6])
         }
         receiver_tensors = features
         return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
