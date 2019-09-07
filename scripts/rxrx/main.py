@@ -120,15 +120,31 @@ ith Estimator.
 
     # Calculate loss, which includes softmax cross entropy and L2 regularization.
     one_hot_labels = tf.one_hot(labels, n_classes)
+    #tgt_logits = logits[labels]
+    #theta = tf.math.acos(tgt_logits)
+    #merginal_tgt_logits = tf.math.cos(theta+0.0051)
+    
     cross_entropy = tf.losses.softmax_cross_entropy(
         logits=logits,
         onehot_labels=one_hot_labels)
 
-    # Add weight decay to the loss for non-batch-normalization variables.
-    loss = cross_entropy + weight_decay * tf.add_n([
+    df0 = tf.get_default_graph().get_tensor_by_name("deep_feature:0")
+    #d1k = tf.get_default_graph().get_tensor_by_name("dense_1/kernel:0")
+    tf.logging.info("------------------------")
+    #tf.logging.info(d1k)
+    #tf.logging.info([v.name for v in tf.trainable_variables()])
+    
+    df0loss = tf.math.reduce_euclidean_norm(tf.subtract(tf.math.reduce_euclidean_norm(df0,axis=1),tf.ones([train_batch_size])),axis=0)
+    #d1kloss = tf.math.reduce_sum(tf.math.reduce_euclidean_norm(d1k,axis=0))
+
+    l2loss = weight_decay*tf.add_n([
         tf.nn.l2_loss(v) for v in tf.trainable_variables()
-        if 'batch_normalization' not in v.name
+        if 'batch_normalization' or 'dense_1/kernel:0' not in v.name
     ])
+
+    
+    # Add weight decay to the loss for non-batch-normalization variables.
+    loss = cross_entropy + l2loss
 
     if mode == tf.estimator.ModeKeys.TRAIN:
         # Compute the current epoch and associated learning rate from global_step.
@@ -154,8 +170,19 @@ ith Estimator.
             train_op = optimizer.minimize(loss, global_step)
 
         #gs_t = tf.reshape(global_step, [1])
+
+        l2loss_t = tf.reshape(l2loss, [1])
+        cross_entropy_t = tf.reshape(cross_entropy, [1])
+        df0loss_t = tf.reshape(df0loss, [1])
+        #d1kloss_t = tf.reshape(d1kloss, [1])
         loss_t = tf.reshape(loss, [1])
         lr_t = tf.reshape(learning_rate, [1])
+        
+        tf.summary.scalar('l2loss', l2loss_t[0])
+        tf.summary.scalar('cross_entropy', cross_entropy_t[0])
+        tf.summary.scalar('df0loss_t', df0loss_t[0])
+        #tf.summary.scalar('d1kloss_t', d1kloss_t[0])
+        
         #with tf.summary.create_file_writer(model_dir,max_queue=iterations_per_loop).as_default():
         tf.summary.scalar('loss', loss_t[0])
         tf.summary.scalar('learning_rate', lr_t[0])
@@ -169,10 +196,10 @@ ith Estimator.
         top_1_accuracy = tf.metrics.accuracy(labels, predictions)
         in_top_5 = tf.cast(tf.nn.in_top_k(logits, labels, 5), tf.float32)
         top_5_accuracy = tf.metrics.mean(in_top_5)
-        
         tf.summary.scalar('top_1_accuracy', top_1_accuracy[1])
         tf.summary.scalar('top_5_accuracy', top_5_accuracy[1])
-        eval_metrics = {'top_1_accuracy': top_1_accuracy,'top_5_accuracy': top_5_accuracy}
+        eval_metrics = {'top_1_accuracy': top_1_accuracy,
+                        'top_5_accuracy': top_5_accuracy}
 
     return tf.estimator.EstimatorSpec(
         mode=mode,

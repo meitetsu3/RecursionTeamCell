@@ -458,12 +458,23 @@ def resnet_v1_generator(block_fn, layers, num_classes,
         inputs, [-1, 2048 if block_fn is bottleneck_block else 512])
     
     inputs = tf.concat([inputs, cell,plate,experiment], 1)
-    
+
     inputs = tf.layers.dense(
         inputs=inputs,
-        units=num_classes,
+        units=512,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
+    
+    inputs = tf.identity(inputs, 'deep_feature_in')
+    
+    inputs = tf.math.l2_normalize(inputs,axis=1,name = 'deep_feature')
+    
+    W = tf.Variable(tf.random_normal([512,num_classes],stddev=0.01),dtype=tf.float32
+                    ,trainable = True,name="W")
+    
+    inputs = tf.matmul(inputs,tf.math.l2_normalize(W,axis=0))
+    #kernel_constraint = lambda x : tf.math.l2_normalize(x,axis=0)
     inputs = tf.identity(inputs, 'final_dense')
+    
     return inputs
 
   model.default_image_size = 224

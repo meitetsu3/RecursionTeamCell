@@ -24,13 +24,13 @@ train_df = pd.read_csv(r"../data/metadata/train.csv")
 train_df["pred"] = np.nan
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet50-bs16-ep20-CLR01_04-DC4-CellPlateExp-ValCT03/saved_model/1566708068"
+export_dir = r"../model/Resnet50FA-LL512-bs16-ep30-CLR01_2-DC5-CellPlateExp-ValCT03/saved_model/1567527316"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
 # 19897 records (both on submission and test.csv)
 
-# double checking the ids in test.csv and submission.csv are ordered the same.
+# double checking the ids in test.csv and submission.csv are ordered the same.1566708068
 # they are the same.
 for i, idcode in enumerate(test_df["id_code"]):
     if (idcode!=submission_df["id_code"][i]):
