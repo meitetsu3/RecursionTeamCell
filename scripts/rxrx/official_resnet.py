@@ -471,9 +471,9 @@ def resnet_v1_generator(block_fn, layers, num_classes,
     W = tf.Variable(tf.random_normal([512,num_classes],stddev=0.01),dtype=tf.float32
                     ,trainable = True,name="W")
     
-    inputs = tf.matmul(inputs,tf.math.l2_normalize(W,axis=0))
-    #kernel_constraint = lambda x : tf.math.l2_normalize(x,axis=0)
-    inputs = tf.identity(inputs, 'final_dense')
+    Wnorm = tf.math.l2_normalize(W,axis=0,name="Wnorm")
+    
+    inputs = tf.matmul(inputs,Wnorm)
     
     return inputs
 

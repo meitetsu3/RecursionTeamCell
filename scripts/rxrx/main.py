@@ -105,8 +105,8 @@ ith Estimator.
 
     if mode == tf.estimator.ModeKeys.PREDICT:
         predictions = {
-            'classes': tf.argmax(logits, axis=1),
-            'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+            'classes': tf.argmax(64*logits, axis=1),
+            'probabilities': tf.nn.softmax(64*logits, name='softmax_tensor')
         }
         return tf.estimator.EstimatorSpec(
             mode=mode,
@@ -115,13 +115,13 @@ ith Estimator.
                 'classify': tf.estimator.export.PredictOutput(predictions)
             })
 
-    # If necessary, in the model_fn, use params['batch_size'] instead the batch
-    # size flags (--train_batch_size or --eval_batch_size).
-
-    # Calculate loss, which includes softmax cross entropy and L2 regularization.
     one_hot_labels = tf.one_hot(labels, n_classes)
-    #tgt_logits = logits[labels]
-    #theta = tf.math.acos(tgt_logits)
+    
+    original_tgt_logits = tf.reduce_sum(tf.multiply(one_hot_labels,logits),axis=1)
+    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+0.0051)
+    logits = logits-tf.multiply(one_hot_labels,logits)+tf.matmul(tf.diag(merginal_tgt_logits),one_hot_labels)
+    
+    logits = tf.identity(64.0*logits, 'final_dense')
     #merginal_tgt_logits = tf.math.cos(theta+0.0051)
     
     cross_entropy = tf.losses.softmax_cross_entropy(
@@ -129,17 +129,18 @@ ith Estimator.
         onehot_labels=one_hot_labels)
 
     df0 = tf.get_default_graph().get_tensor_by_name("deep_feature:0")
+    W0 = tf.get_default_graph().get_tensor_by_name("Wnorm:0")
     #d1k = tf.get_default_graph().get_tensor_by_name("dense_1/kernel:0")
     tf.logging.info("------------------------")
     #tf.logging.info(d1k)
-    #tf.logging.info([v.name for v in tf.trainable_variables()])
+    tf.logging.info([v.name for v in tf.trainable_variables()])
     
     df0loss = tf.math.reduce_euclidean_norm(tf.subtract(tf.math.reduce_euclidean_norm(df0,axis=1),tf.ones([train_batch_size])),axis=0)
-    #d1kloss = tf.math.reduce_sum(tf.math.reduce_euclidean_norm(d1k,axis=0))
+    W0loss = tf.math.reduce_sum(tf.math.reduce_euclidean_norm(W0,axis=0))
 
     l2loss = weight_decay*tf.add_n([
         tf.nn.l2_loss(v) for v in tf.trainable_variables()
-        if 'batch_normalization' or 'dense_1/kernel:0' not in v.name
+        if 'batch_normalization' not in v.name or 'Wnorm' not in v.name or 'deep_feature:0' not in v.name 
     ])
 
     
@@ -174,14 +175,15 @@ ith Estimator.
         l2loss_t = tf.reshape(l2loss, [1])
         cross_entropy_t = tf.reshape(cross_entropy, [1])
         df0loss_t = tf.reshape(df0loss, [1])
-        #d1kloss_t = tf.reshape(d1kloss, [1])
+        W0loss_t = tf.reshape(W0loss, [1])
+        
         loss_t = tf.reshape(loss, [1])
         lr_t = tf.reshape(learning_rate, [1])
         
         tf.summary.scalar('l2loss', l2loss_t[0])
         tf.summary.scalar('cross_entropy', cross_entropy_t[0])
         tf.summary.scalar('df0loss_t', df0loss_t[0])
-        #tf.summary.scalar('d1kloss_t', d1kloss_t[0])
+        tf.summary.scalar('W0loss_t', W0loss_t[0])
         
         #with tf.summary.create_file_writer(model_dir,max_queue=iterations_per_loop).as_default():
         tf.summary.scalar('loss', loss_t[0])
@@ -296,8 +298,8 @@ def main(url_base_path,
     def serving_input_receiver_fn():
         features = {
           'image': tf.placeholder(dtype=tf.float32, shape=[None, 512, 512, 6]),
-          'cell': tf.placeholder(dtype=tf.int32, shape=[None]),
-          'plate': tf.placeholder(dtype=tf.int32, shape=[None]),
+          'cell': tf.placeholder(dtype=tf.int64, shape=[None]),
+          'plate': tf.placeholder(dtype=tf.int64, shape=[None]),
           'experiment': tf.placeholder(dtype=tf.float32, shape=[None,6])
         }
         receiver_tensors = features

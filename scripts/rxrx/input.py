@@ -75,7 +75,7 @@ def parse_example(value,pixel_stats=None):
 
     label = parsed["sirna"]
     Cell_table = tf.contrib.lookup.HashTable(
-            tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int32), -1
+            tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int64), -1
             )
     Exp_table = tf.contrib.lookup.HashTable(
             tf.contrib.lookup.KeyValueTensorInitializer(EXP_keys, EXP_values, key_dtype=tf.string, value_dtype=tf.float32), -1
