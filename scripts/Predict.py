@@ -24,7 +24,7 @@ train_df = pd.read_csv(r"../data/metadata/train.csv")
 train_df["pred"] = np.nan
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet50FAS64m00051-LL512-bs16-ep20-CLR001_02-DC5-CellPlateExp-ValCT03/saved_model/1568089912"
+export_dir = r"../model/Resnet50FAS64m01-LL512-bs16-ep6-CLR001_008-DC5-CellPlateExp-ValCTHO03/saved_model/1568452421"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 

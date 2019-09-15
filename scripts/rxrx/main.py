@@ -105,8 +105,8 @@ ith Estimator.
 
     if mode == tf.estimator.ModeKeys.PREDICT:
         predictions = {
-            'classes': tf.argmax(64*logits, axis=1),
-            'probabilities': tf.nn.softmax(64*logits, name='softmax_tensor')
+            'classes': tf.argmax(64.0*logits, axis=1),
+            'probabilities': tf.nn.softmax(64.0*logits, name='softmax_tensor')
         }
         return tf.estimator.EstimatorSpec(
             mode=mode,
@@ -118,14 +118,14 @@ ith Estimator.
     one_hot_labels = tf.one_hot(labels, n_classes)
     
     original_tgt_logits = tf.reduce_sum(tf.multiply(one_hot_labels,logits),axis=1)
-    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+0.0051)
-    logits = logits-tf.multiply(one_hot_labels,logits)+tf.matmul(tf.diag(merginal_tgt_logits),one_hot_labels)
+    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+0.2)
+    logitsTrain = logits-tf.multiply(one_hot_labels,logits)+tf.matmul(tf.diag(merginal_tgt_logits),one_hot_labels)
     
-    logits = tf.identity(64.0*logits, 'final_dense')
+    logitsTrain = tf.identity(64.0*logitsTrain, 'final_dense')
     #merginal_tgt_logits = tf.math.cos(theta+0.0051)
     
     cross_entropy = tf.losses.softmax_cross_entropy(
-        logits=logits,
+        logits=logitsTrain,
         onehot_labels=one_hot_labels)
 
     df0 = tf.get_default_graph().get_tensor_by_name("deep_feature:0")
@@ -140,7 +140,7 @@ ith Estimator.
 
     l2loss = weight_decay*tf.add_n([
         tf.nn.l2_loss(v) for v in tf.trainable_variables()
-        if 'batch_normalization' not in v.name or 'Wnorm' not in v.name or 'deep_feature:0' not in v.name 
+        if 'batch_normalization' not in v.name and 'Wnorm' not in v.name and 'deep_feature:0' not in v.name 
     ])
 
     
