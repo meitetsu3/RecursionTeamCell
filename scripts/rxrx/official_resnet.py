@@ -461,19 +461,17 @@ def resnet_v1_generator(block_fn, layers, num_classes,
 
     inputs = tf.layers.dense(
         inputs=inputs,
-        units=512,
+        units=554,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
     
     inputs = tf.identity(inputs, 'deep_feature_in')
     
     inputs = tf.math.l2_normalize(inputs,axis=1,name = 'deep_feature')
     
-    W = tf.Variable(tf.random_normal([512,num_classes],stddev=0.01),dtype=tf.float32
-                    ,trainable = True,name="W")
+    W = tf.Variable(tf.concat([tf.diag(tf.tile([1.0], [554])),tf.diag(tf.tile([-1.0], [554]))],axis=1),dtype=tf.float32
+                    ,trainable = False,name="W")
     
-    Wnorm = tf.math.l2_normalize(W,axis=0,name="Wnorm")
-    
-    inputs = tf.matmul(inputs,Wnorm)
+    inputs = tf.matmul(inputs,W)
     
     return inputs
 

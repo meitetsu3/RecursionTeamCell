@@ -10,7 +10,7 @@ from rxrx.main import main
 
 #!nvidia-smi
 
-MODEL_DIR = r"../model/Resnet50FAS64m02-LL512-bs16-ep20-CLR001_008-DC5-CellPlateExp-ValCTHO03"
+MODEL_DIR = r"../model/Resnet50FAS64m05-LL554-bs16-ep20-CLR001_02-DC5-CellPlateExp-ValCTHO03"
 URL_BASE_PATH = r"../data/processed/by_exp_plate_site-42"  #r"../data/processed/controls/random-42/Ctrl
 
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -26,4 +26,4 @@ main(url_base_path=URL_BASE_PATH,
      n_classes=1108,
      weight_decay=1e-5,
      min_learning_rate=0.01,
-     max_learning_rate=0.08)
+     max_learning_rate=0.2)
