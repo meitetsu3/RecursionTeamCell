@@ -118,7 +118,7 @@ ith Estimator.
     one_hot_labels = tf.one_hot(labels, n_classes)
     
     original_tgt_logits = tf.reduce_sum(tf.multiply(one_hot_labels,logits),axis=1)
-    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+0.5)
+    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+1.5)
     logitsTrain = logits-tf.multiply(one_hot_labels,logits)+tf.matmul(tf.diag(merginal_tgt_logits),one_hot_labels)
     
     logitsTrain = tf.identity(64.0*logitsTrain, 'final_dense')
