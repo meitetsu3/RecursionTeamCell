@@ -21,7 +21,8 @@ md = rio.combine_metadata(base_path = meta_path)
 #mdtest = md[md.dataset == "test"]
 
 md.head()
-md = md[md.well_type == "positive_control"]
+md = md[md.well_type != "treatment"]
+
 # 12194 rows. 51*4*30*2=12240. 44 voided.
 #md["dataset"]="test_pos_ctrl"
 

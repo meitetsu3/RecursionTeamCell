@@ -413,7 +413,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
                     list) or len(dropblock_keep_probs) != 4:
     raise ValueError('dropblock_keep_probs is not valid:', dropblock_keep_probs)
 
-  def model(inputs, cell,plate,experiment, is_training):
+  def model(inputs, cell,plate, is_training):
     """Creation of the model graph."""
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=64, kernel_size=7, strides=2,
@@ -457,25 +457,34 @@ def resnet_v1_generator(block_fn, layers, num_classes,
     inputs = tf.reshape(
         inputs, [-1, 2048 if block_fn is bottleneck_block else 512])
     
-    inputs = tf.concat([inputs, cell,plate,experiment], 1)
+    inputs = tf.concat([inputs, cell,plate], 1)
 
+    #inputs = tf.layers.dense(
+    #    inputs=inputs,
+    #    units=1024,
+    #    kernel_initializer=tf.random_normal_initializer(stddev=.01))
+ 
+    #inputs = tf.nn.dropout(inputs,0.8)
+    
     inputs = tf.layers.dense(
         inputs=inputs,
-        units=554,
+        units=570,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
-    
+        
     inputs = tf.identity(inputs, 'deep_feature_in')
     
     inputs = tf.math.l2_normalize(inputs,axis=1,name = 'deep_feature')
     
-    W = tf.Variable(tf.concat([tf.diag(tf.tile([1.0], [554])),tf.diag(tf.tile([-1.0], [554]))],axis=1),dtype=tf.float32
-                    ,trainable = False,name="W")
+    W = tf.Variable(tf.concat([tf.diag(tf.tile([1.0], [570])),tf.slice(tf.diag(tf.tile([-1.0], [570])),[0,0],[570,569])],axis=1),dtype=tf.float32
+                    ,trainable = True,name="W")
     
-    inputs = tf.matmul(inputs,W)
+    Wnorm = tf.math.l2_normalize(W,axis=0,name="Wnorm")
+    
+    inputs = tf.matmul(inputs,Wnorm)
     
     return inputs
 
-  model.default_image_size = 224
+  #model.default_image_size = 224
   return model
 
 

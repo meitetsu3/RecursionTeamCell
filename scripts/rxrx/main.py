@@ -77,7 +77,7 @@ ith Estimator.
         image = features['image']
         cell = features['cell']
         plate = features['plate']
-        experiment = features['experiment']
+#        experiment = features['experiment']
         one_hot_cell = tf.one_hot(cell, 4)
         one_hot_plate = tf.one_hot(plate-1, 4)
 
@@ -98,7 +98,7 @@ ith Estimator.
             num_classes=n_classes,
             data_format=data_format)
         return network(
-            inputs=image, cell = one_hot_cell, plate = one_hot_plate, experiment=experiment,
+            inputs=image, cell = one_hot_cell, plate = one_hot_plate,
             is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
     logits = build_network()
@@ -117,8 +117,12 @@ ith Estimator.
 
     one_hot_labels = tf.one_hot(labels, n_classes)
     
+    global_step = tf.train.get_global_step()
+    global_step_float = tf.cast(global_step,tf.float32)
+    mergin = 0.5*global_step_float/train_steps
+    
     original_tgt_logits = tf.reduce_sum(tf.multiply(one_hot_labels,logits),axis=1)
-    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+1.5)
+    merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+mergin)
     logitsTrain = logits-tf.multiply(one_hot_labels,logits)+tf.matmul(tf.diag(merginal_tgt_logits),one_hot_labels)
     
     logitsTrain = tf.identity(64.0*logitsTrain, 'final_dense')
@@ -128,18 +132,14 @@ ith Estimator.
         logits=logitsTrain,
         onehot_labels=one_hot_labels)
 
-    df0 = tf.get_default_graph().get_tensor_by_name("deep_feature:0")
-    
     #d1k = tf.get_default_graph().get_tensor_by_name("dense_1/kernel:0")
     tf.logging.info("------------------------")
     #tf.logging.info(d1k)
     tf.logging.info([v.name for v in tf.trainable_variables()])
-    
-    df0loss = tf.math.reduce_euclidean_norm(tf.subtract(tf.math.reduce_euclidean_norm(df0,axis=1),tf.ones([train_batch_size])),axis=0)
 
     l2loss = weight_decay*tf.add_n([
         tf.nn.l2_loss(v) for v in tf.trainable_variables()
-        if 'batch_normalization' not in v.name and 'deep_feature:0' not in v.name 
+        if 'batch_normalization' not in v.name and 'deep_feature:0' not in v.name and 'Wnorm:0' not in v.name 
     ])
 
     tf.logging.info("l2loss: {}".format(l2loss))
@@ -149,19 +149,17 @@ ith Estimator.
 
     if mode == tf.estimator.ModeKeys.TRAIN:
         # Compute the current epoch and associated learning rate from global_step.
-        global_step = tf.train.get_global_step()
         
         lrrange = max_learning_rate-min_learning_rate
         mid_step = 0.45*train_steps
         anneal_step = 0.9*train_steps
-        global_step_float = tf.cast(global_step,tf.float32)
-        
+
         learning_rate = tf.cond(global_step_float < mid_step,lambda:min_learning_rate+global_step_float*lrrange/mid_step
                 ,lambda:tf.cond(global_step_float < anneal_step,lambda:min_learning_rate+2*lrrange-global_step_float*lrrange/mid_step
                          ,lambda:9.1*min_learning_rate-global_step_float*9*min_learning_rate/train_steps))
 
-        tf.logging.info("learning_rate: {}".format(learning_rate))
         #learning_rate = tf.cast(learning_rate,tf.float32)        
+        #optimizer = tf.train.AdamOptimizer(learning_rate=min_learning_rate)
         optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
 
         # Batch normalization requires UPDATE_OPS to be added as a dependency to
@@ -174,19 +172,19 @@ ith Estimator.
 
         l2loss_t = tf.reshape(l2loss, [1])
         cross_entropy_t = tf.reshape(cross_entropy, [1])
-        df0loss_t = tf.reshape(df0loss, [1])
+        mergin_t = tf.reshape(mergin, [1])
         
         loss_t = tf.reshape(loss, [1])
         lr_t = tf.reshape(learning_rate, [1])
         
         tf.summary.scalar('l2loss', l2loss_t[0])
         tf.summary.scalar('cross_entropy', cross_entropy_t[0])
-        tf.summary.scalar('df0loss_t', df0loss_t[0])
         
         #with tf.summary.create_file_writer(model_dir,max_queue=iterations_per_loop).as_default():
         tf.summary.scalar('loss', loss_t[0])
         tf.summary.scalar('learning_rate', lr_t[0])
-
+        tf.summary.scalar('mergin', mergin_t[0])
+        
     else:
         train_op = None
 
@@ -295,10 +293,10 @@ def main(url_base_path,
 
     def serving_input_receiver_fn():
         features = {
-          'image': tf.placeholder(dtype=tf.float32, shape=[None, 512, 512, 6]),
+          'image': tf.placeholder(dtype=tf.float32, shape=[None, 384, 384, 6]),
           'cell': tf.placeholder(dtype=tf.int64, shape=[None]),
-          'plate': tf.placeholder(dtype=tf.int64, shape=[None]),
-          'experiment': tf.placeholder(dtype=tf.float32, shape=[None,6])
+          'plate': tf.placeholder(dtype=tf.int64, shape=[None])
+#          'experiment': tf.placeholder(dtype=tf.float32, shape=[None,6])
         }
         receiver_tensors = features
         return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)
