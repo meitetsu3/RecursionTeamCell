@@ -25,15 +25,11 @@ from __future__ import print_function
 from functools import partial, reduce
 import pandas as pd
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf 
+
 CELL_TYPES = {'HEPG2':0,'HUVEC':1,'RPE':2,'U2OS':3}
-#{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
 CELL_keys = list(CELL_TYPES.keys())
 CELL_values = [CELL_TYPES[k] for k in CELL_keys]
-
-#batchval_df = pd.read_csv(r"./BatchValLookup.csv")
-#EXP_keys = list(batchval_df['key'])
-#EXP_values = [np.float32(batchval_df[batchval_df['key']==k]['batch_val'])[0] for k in EXP_keys]        
 
 def set_shapes(batch_size, feature, labels):
     """Statically set the batch_size dimension."""
@@ -43,10 +39,6 @@ def set_shapes(batch_size, feature, labels):
         tf.TensorShape([batch_size, None, None, None])))
     feature["cell"].set_shape(
         feature["cell"].get_shape().merge_with(tf.TensorShape([batch_size])))
-    feature["plate"].set_shape(
-        feature["plate"].get_shape().merge_with(tf.TensorShape([batch_size])))
-#    feature["experiment"].set_shape(feature["experiment"].get_shape().merge_with(
-#        tf.TensorShape([batch_size, None])))
     return feature, labels
 
 
@@ -68,6 +60,7 @@ def parse_example(value,pixel_stats=None):
     image_raw = tf.decode_raw(parsed['image'], tf.uint8)
     image = tf.reshape(image_raw, image_shape)
     image.set_shape(image_shape)
+    image = tf.image.random_crop(image,size=[384,384,6])
     image = tf.cast(image, tf.float32)
     # per image normalization. did not improve validation nor train
 #    mean  = tf.reduce_mean(tf.cast(image, tf.float32),axis=0)
@@ -77,34 +70,23 @@ def parse_example(value,pixel_stats=None):
     image = tf.image.random_flip_up_down(image)
     image = tf.image.random_flip_left_right(image)
     image = tf.image.rot90(image, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
-    image = tf.image.random_crop(image,size=[384,384,6])
+   
     
     if pixel_stats is not None:
         mean, std = pixel_stats
         image = (tf.cast(image, tf.float32) - mean) / std
 
-    label = parsed["sirna"]
+    label = parsed["sirna"] 
     Cell_table = tf.contrib.lookup.HashTable(
             tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int64), -1
             )
-#    Exp_table = tf.contrib.lookup.HashTable(
-#            tf.contrib.lookup.KeyValueTensorInitializer(EXP_keys, EXP_values, key_dtype=tf.string, value_dtype=tf.float32), -1
-#            )    
     cell = Cell_table.lookup(parsed["cell_type"])
-    plate = parsed["plate"]    
-#    experiment = [Exp_table.lookup(parsed["experiment"]+'1'),
-#                                   Exp_table.lookup(parsed["experiment"]+'2'),
-#                                   Exp_table.lookup(parsed["experiment"]+'3'),
-#                                   Exp_table.lookup(parsed["experiment"]+'4'),
-#                                   Exp_table.lookup(parsed["experiment"]+'5'),
-#                                   Exp_table.lookup(parsed["experiment"]+'6')]
-#                                                 
-    return {"image":image,"cell":cell,"plate":plate}, label
+
+    return {"image":image,"cell":cell}, label
 
 
 DEFAULT_PARAMS = dict(batch_size=512)
-
-
+    
 def input_fn(tf_records_glob,
              input_fn_params,
              params=None,

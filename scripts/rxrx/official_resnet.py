@@ -166,7 +166,7 @@ def fixed_padding(inputs, kernel_size, data_format='channels_first'):
         operations. Should be a positive integer.
     data_format: `str` either "channels_first" for `[batch, channels, height,
         width]` or "channels_last for `[batch, height, width, channels]`.
-
+CELL
   Returns:
     A padded `Tensor` of the same `data_format` with size either intact
     (if `kernel_size == 1`) or padded (if `kernel_size > 1`).
@@ -413,7 +413,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
                     list) or len(dropblock_keep_probs) != 4:
     raise ValueError('dropblock_keep_probs is not valid:', dropblock_keep_probs)
 
-  def model(inputs, cell,plate, is_training):
+  def model(inputs, cell, is_training):
     """Creation of the model graph."""
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=64, kernel_size=7, strides=2,
@@ -457,7 +457,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
     inputs = tf.reshape(
         inputs, [-1, 2048 if block_fn is bottleneck_block else 512])
     
-    inputs = tf.concat([inputs, cell,plate], 1)
+    inputs = tf.concat([inputs, cell], 1)
 
     #inputs = tf.layers.dense(
     #    inputs=inputs,
