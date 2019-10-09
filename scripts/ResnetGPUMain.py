@@ -10,7 +10,7 @@ from rxrx.main import main
 
 #!nvidia-smi
 
-MODEL_DIR = r"../model/Resnet50FAS64m05-D554WMPole-bs16-ep45-CLR001-015-WD5-Cell-ValC03HO-FlipRotCrop"
+MODEL_DIR = r"../model/Resnet50FAS64m05-D554WMPole-bs16-ep45-CLR001-015-WD5-Cell-ValC03-FlipRotCrop"
 URL_BASE_PATH = r"../data/processed/by_exp_plate_site-42"  #r"../data/processed/controls/random-42/Ctrl
 
 tf.logging.set_verbosity(tf.logging.INFO)

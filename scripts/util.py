@@ -7,6 +7,21 @@ Created on Fri Aug 23 23:07:42 2019
 """
 
 import pandas as pd
+df_train = pd.read_csv(r"../data/metadata/train.csv")
+
+sirnas = []
+exp = "HEPG2-03" # select experiment that has all sirnas
+df_exp = df_train.groupby("experiment").get_group(exp)
+for plate, df_exp_pl in df_exp.groupby("plate"):
+    ss = sorted(df_exp_pl["sirna"].unique())
+    sirnas += ss
+    print("Plate {} has {} sirnas.".format(plate, df_exp_pl["sirna"].nunique()))
+    print("   First 10 in ordered group:", ss[:10])
+# write sirna groups to a dataframe to save as output
+pd.DataFrame(data={"sirna" : sirnas, 
+                   "group" : [i for i in range(1,5) for j in range(277)]}).to_csv("sirna_groups.csv", index=False)
+
+import pandas as pd
 import numpy as np
 
 pixel_df = pd.read_csv(r"../data/metadata/pixel_stats.csv")
