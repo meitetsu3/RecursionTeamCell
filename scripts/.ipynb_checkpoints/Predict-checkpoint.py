@@ -31,7 +31,7 @@ train_cnt_df["pred"] = np.nan
 
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet50FAS64m05-D554WMPole-bs16-ep45-CLR001-015-WD5-Cell-ValC03-FlipRotCrop/saved_model/1570703471"
+export_dir = r"../model/Resnet50FAS64m05-D554WMPole-bs16-ep45-CLR001-015-WD5-Cell-ValC03HO-FlipRotCrop/saved_model/1570534434"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
@@ -101,48 +101,49 @@ for i, idcode in enumerate(tgt["id_code"]):
     row = np.concatenate((exp,plate,prob[0]),axis=0)
     problist.append(row)
 
-################################################################################
-# converting the result of probbilities in data frame
-# df_prob, df_prob_head
-df_prob = pd.DataFrame([i[2:] for i in problist],dtype=float)
-df_prob = df_prob.loc[:,0:1107]
-df_prob_head = pd.DataFrame([i[:2] for i in problist],columns=["exp","plate"])
+df_prob = pd.DataFrame(problist,columns=['exp', 'plate',*list(range(0,1139))])
+df_prob[list(range(0,1139))] = df_prob[list(range(0,1139))].astype(float) # takes long time
 df_prob.dtypes
-
-# add pred_raw on df_prob, add header.
-pred_raw = df_prob.idxmax(axis=1)
+prob = df_prob[list(range(0,1108))]
+pred_raw = prob.idxmax(axis=1)
 pred_raw = pd.DataFrame(pred_raw, columns=["pred_raw"])
-df_prob = pd.concat([df_prob_head,pred_raw,df_prob],axis=1)
+pred_raw = pd.concat([df_prob[["exp","plate"]],pred_raw],axis=1)
 
-# add plate group and count predicted group
-df_prob = df_prob.join(sirna_groups_df.set_index('sirna'),on='pred_raw')
-pred_grp_cnt = df_prob[['exp','plate','group','pred_raw']].groupby(['exp','plate','group']).count().reset_index()
+pred_raw_grp = pred_raw.join(sirna_groups_df.set_index('sirna'),on='pred_raw')
+pred_raw_grp_cnt = pred_raw_grp.groupby(['exp','plate','group']).count().reset_index()
 
-pred_grp_cnt_spread=pd.pivot_table(pred_grp_cnt,index=['exp','plate'],columns='group',values='pred_raw',fill_value = 0)
-pred_grp_cnt_spread=pred_grp_cnt_spread.reset_index()
-pred_grp_cnt_spread.columns.name = None
+pred_raw_grp_cnt_spread=pd.pivot_table(pred_raw_grp_cnt,index=['exp','plate'],columns='group',values='pred_raw',fill_value = 0)
+pred_raw_grp_cnt_spread=pred_raw_grp_cnt_spread.reset_index()
+pred_raw_grp_cnt_spread.columns.name = None
 
-# LSA by exp to assign group for each exp-plate
 from scipy.optimize import linear_sum_assignment
+
 groupest=[]
-for exp,df in pred_grp_cnt_spread.groupby('exp'):
+for exp,df in pred_raw_grp_cnt_spread.groupby('exp'):
     row_ind, col_ind = linear_sum_assignment(-df[[1,2,3,4]].to_numpy())
     groupest.append(col_ind)
 
-pred_grp = pd.DataFrame(np.concatenate(groupest)+1, columns=["pred_grp"])
-pred_grp = pd.concat([pred_grp_cnt_spread[["exp","plate"]],pred_grp],axis=1)
+pred_grp = pd.DataFrame(np.concatenate(groupest), columns=["pred_grp"])
+pred_grp = pd.concat([pred_raw_grp_cnt_spread[["exp","plate"]],pred_grp],axis=1)
 
-# go through each plate, get target sirnas, get the rows for the plate, run LSA to get predicted sirna
-pred_sirna = []
+
 for i in pred_grp.iterrows():
     tgt_sirna=sirna_groups_df[sirna_groups_df["group"]==i[1]['pred_grp']]["sirna"].to_list()
     tgt_row = (df_prob["exp"]==i[1]['exp']) & (df_prob["plate"]==i[1]['plate'])
-    row_ind, col_ind = linear_sum_assignment(-df_prob.loc[tgt_row,tgt_sirna].to_numpy())
-    pred_sirna.append([tgt_sirna[k] for k in col_ind])
-    #print(i)
-    #row_idx = df_prob.index[tgt_row].tolist()
-    #score_mtx = np.asarray([df_prob.iloc[:,3+c] for (r,c) in zip(row_idx, [tgt_sirna[k] for k in col_ind])])
-    #print(score_mtx.sum())
-    
-tgt.iloc[:,1]=np.concatenate(pred_sirna)
+    df_prob.loc[tgt_row,tgt_sirna]=0
+
+
+df_prob.loc[:,list(range(1108,1139))]=0
+
+sirna=[]
+for exp,df in df_prob.groupby('exp'):
+    print(df)
+    row_ind, col_ind = linear_sum_assignment(-df.loc[:,list(range(0,1108))].to_numpy())
+    sirna.append(col_ind)
+
+pred_sirna = pd.DataFrame(np.concatenate(sirna), columns=["pred_sirna"])
+
+tgt.iloc[:,1]=pred_sirna["pred_sirna"]
+
 tgt.to_csv("../submit_prediction.csv",index=False)
+
