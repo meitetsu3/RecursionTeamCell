@@ -61,7 +61,12 @@ def parse_example(value,pixel_stats=None):
     image = tf.reshape(image_raw, image_shape)
     image.set_shape(image_shape)
     image = tf.image.random_crop(image,size=[384,384,6])
-    image = tf.cast(image, tf.float32)
+    b = tf.random_normal((6,), seed=0,stddev=0.1)
+    
+    if pixel_stats is not None:
+        mean, std = pixel_stats
+        image = (tf.cast(image, tf.float32) - mean) / std + b
+    
     # per image normalization. did not improve validation nor train
 #    mean  = tf.reduce_mean(tf.cast(image, tf.float32),axis=0)
 #    std = tf.math.reduce_std(tf.cast(image, tf.float32),axis=0)
@@ -71,11 +76,6 @@ def parse_example(value,pixel_stats=None):
     image = tf.image.random_flip_left_right(image)
     image = tf.image.rot90(image, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
    
-    
-    if pixel_stats is not None:
-        mean, std = pixel_stats
-        image = (tf.cast(image, tf.float32) - mean) / std
-
     label = parsed["sirna"] 
     Cell_table = tf.contrib.lookup.HashTable(
             tf.contrib.lookup.KeyValueTensorInitializer(CELL_keys, CELL_values, key_dtype=tf.string, value_dtype=tf.int64), -1
