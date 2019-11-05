@@ -5,6 +5,38 @@ Created on Fri Aug 23 23:07:42 2019
 
 @author: user1
 """
+import tensorflow as tf 
+import numpy as np
+GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
+                                10.45369445,  5.49959796, 9.81545561]),
+                       np.array([7.95876312, 12.17305868, 5.86172946,
+                                 7.83451711, 4.701167, 5.43130431]))
+
+a = tf.Variable(tf.random_normal([3, 3], stddev=1.))
+b = tf.Variable(tf.random_normal([3, 3], stddev=1.))
+c = a + b
+
+init = tf.global_variables_initializer() 
+
+sess = tf.Session()
+sess.run(init)
+print(sess.run(c))
+sess.close()
+
+        
+sess = tf.Session()
+sess.run(tf.global_variables_initializer())
+print(sess.run(b))
+sess.close()
+
+
+with sess.as_default():   # or `with sess:` to close on exit
+    bi = sess.run(b)
+    
+    if pixel_stats is not None:
+        mean, std = pixel_stats
+        image = (tf.cast(image, tf.float32) - mean) / std + b
+
 
 import pandas as pd
 df_train = pd.read_csv(r"../data/metadata/train.csv")

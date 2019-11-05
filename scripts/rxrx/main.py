@@ -112,7 +112,7 @@ def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,tr
     
     global_step = tf.train.get_global_step()
     global_step_float = tf.cast(global_step,tf.float32)
-    mergin = 0.5*global_step_float/train_steps
+    mergin = 0.2*global_step_float/train_steps
     
     original_tgt_logits = tf.reduce_sum(tf.multiply(one_hot_labels,logits),axis=1)
     merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+mergin)
@@ -239,7 +239,6 @@ def main(url_base_path,
         max_learning_rate=max_learning_rate,
         model_dir=model_dir,
         resnet_depth=resnet_depth)
-
 
     params = dict(batch_size=train_batch_size)
     resnet_classifier = tf.estimator.Estimator(

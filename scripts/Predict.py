@@ -31,7 +31,7 @@ train_cnt_df["pred"] = np.nan
 
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet50FAS64m05-D554WMPole-bs16-ep45-CLR001-015-WD5-Cell-ValC03-FlipRotCrop/saved_model/1570703471"
+export_dir = r"../model/Resnet50FAS64m01-D554WMPole-bs16-ep55-CLR001-015-WD5-Cell-ValC0318-FlipRotCropBiasScale/saved_model/1572872767"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 

@@ -61,11 +61,12 @@ def parse_example(value,pixel_stats=None):
     image = tf.reshape(image_raw, image_shape)
     image.set_shape(image_shape)
     image = tf.image.random_crop(image,size=[384,384,6])
-    b = tf.random_normal((6,), seed=0,stddev=0.1)
+    b = tf.random_normal((6,), mean=0.0,stddev=0.1,seed=0)
+    a = tf.random_normal((6,), mean=1.0,stddev=0.1,seed=0)   
     
     if pixel_stats is not None:
         mean, std = pixel_stats
-        image = (tf.cast(image, tf.float32) - mean) / std + b
+        image = (tf.cast(image, tf.float32) - mean)*a / std  + b
     
     # per image normalization. did not improve validation nor train
 #    mean  = tf.reduce_mean(tf.cast(image, tf.float32),axis=0)

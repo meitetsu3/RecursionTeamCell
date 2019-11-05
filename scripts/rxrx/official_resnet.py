@@ -459,12 +459,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
     
     inputs = tf.concat([inputs, cell], 1)
 
-    #inputs = tf.layers.dense(
-    #    inputs=inputs,
-    #    units=1024,
-    #    kernel_initializer=tf.random_normal_initializer(stddev=.01))
- 
-    #inputs = tf.nn.dropout(inputs,0.8)
+    inputs = tf.nn.dropout(inputs,0.9)
     
     inputs = tf.layers.dense(
         inputs=inputs,
