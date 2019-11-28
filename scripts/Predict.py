@@ -10,10 +10,10 @@ from skimage.io import imread
 from tensorflow.contrib import predictor
 
 # The mean and stds for each of the channels
-GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
-                                10.45369445,  5.49959796, 9.81545561]),
-                       np.array([7.95876312, 12.17305868, 5.86172946,
-                                 7.83451711, 4.701167, 5.43130431]))
+# GLOBAL_PIXEL_STATS = (np.array([6.74696984, 14.74640167, 10.51260864,
+#                                 10.45369445,  5.49959796, 9.81545561]),
+#                        np.array([7.95876312, 12.17305868, 5.86172946,
+#                                  7.83451711, 4.701167, 5.43130431]))
 
 CELL_TYPES = {'HEPG2':0,'HUVEC':1,'RPE':2,'U2OS':3}
 
@@ -31,7 +31,7 @@ train_cnt_df["pred"] = np.nan
 
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet50FAS64m01-D554WMPole-bs16-ep55-CLR001-015-WD5-Cell-ValC0318-FlipRotCropBiasScale/saved_model/1572872767"
+export_dir = r"../model/Resnet101FAS64m02-D554WMPole-DOL1K8-bs24-ep65-CLR001-015-WD7-Cell-ValC0318-FlipRotCropBiasScale02ImgChNorm/saved_model/1574969148"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
@@ -61,8 +61,15 @@ for i, idcode in enumerate(tgt["id_code"]):
     for c in range(0,6):
         imgpath_s1 = imagbase + folder+well+r"_s1_w"+str(c+1)+".png"
         imgpath_s2 = imagbase + folder+well+r"_s2_w"+str(c+1)+".png"
-        img_s1[:,:,c] = (imread(imgpath_s1,format='png')-GLOBAL_PIXEL_STATS[0][c])/GLOBAL_PIXEL_STATS[1][c]
-        img_s2[:,:,c] = (imread(imgpath_s2,format='png')-GLOBAL_PIXEL_STATS[0][c])/GLOBAL_PIXEL_STATS[1][c]
+        image1 = imread(imgpath_s1,format='png').astype('float32')
+        image2 = imread(imgpath_s2,format='png').astype('float32')
+        mean1 = np.mean(image1)
+        mean2 = np.mean(image2)
+        std1 = np.std(image1)
+        std2 = np.std(image2)
+        img_s1[:,:,c] = (image1-mean1)/std1
+        img_s2[:,:,c] = (image2-mean2)/std2
+        
     img_s1_c = img_s1[64:448,64:448,:] # 384 center crop
     img_s2_c = img_s2[64:448,64:448,:]
     img_s1_ul = img_s1[0:384,0:384,:]

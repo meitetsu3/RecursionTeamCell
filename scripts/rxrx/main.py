@@ -35,14 +35,14 @@ from rxrx import input as rxinput
 from rxrx.official_resnet import resnet_v1
 
 DEFAULT_INPUT_FN_PARAMS = {
-    'tfrecord_dataset_buffer_size': 256,
-    'tfrecord_dataset_num_parallel_reads': 2,
-    'parallel_interleave_cycle_length': 32,
+    'tfrecord_dataset_buffer_size': 512,
+    'tfrecord_dataset_num_parallel_reads': 8,
+    'parallel_interleave_cycle_length': 4,
     'parallel_interleave_block_length': 1,
     'parallel_interleave_buffer_output_elements': None,
     'parallel_interleave_prefetch_input_elements': None,
-    'map_and_batch_num_parallel_calls': 128,
-    'transpose_num_parallel_calls': 128,
+    'map_and_batch_num_parallel_calls': 8,
+    'transpose_num_parallel_calls': 8,
     'prefetch_buffer_size': tf.data.experimental.AUTOTUNE,
 }
 
@@ -211,7 +211,7 @@ def main(url_base_path,
          min_learning_rate,
          max_learning_rate,
          input_fn_params=DEFAULT_INPUT_FN_PARAMS,
-         resnet_depth=50):
+         resnet_depth=101):
 
     steps_per_epoch = (num_train_images // train_batch_size)
     train_steps = steps_per_epoch * train_epochs

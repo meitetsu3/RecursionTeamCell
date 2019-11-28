@@ -61,16 +61,14 @@ def parse_example(value,pixel_stats=None):
     image = tf.reshape(image_raw, image_shape)
     image.set_shape(image_shape)
     image = tf.image.random_crop(image,size=[384,384,6])
-    b = tf.random_normal((6,), mean=0.0,stddev=0.1,seed=0)
-    a = tf.random_normal((6,), mean=1.0,stddev=0.1,seed=0)   
+    b = tf.random_normal((6,), mean=0.0,stddev=0.2,seed=0)
+    a = tf.random_normal((6,), mean=1.0,stddev=0.2,seed=0)   
     
-    if pixel_stats is not None:
-        mean, std = pixel_stats
-        image = (tf.cast(image, tf.float32) - mean)*a / std  + b
-    
-    # per image normalization. did not improve validation nor train
-#    mean  = tf.reduce_mean(tf.cast(image, tf.float32),axis=0)
-#    std = tf.math.reduce_std(tf.cast(image, tf.float32),axis=0)
+    image = tf.cast(image, tf.float32)
+    mean = tf.reduce_mean(image,axis=[0,1])
+    std = tf.math.reduce_std(image,axis=[0,1])
+    image = (image - mean)*a / std  + b
+
 #    image = tf.image.per_image_standardization(tf.cast(image, tf.float32))
     
     image = tf.image.random_flip_up_down(image)
@@ -124,7 +122,7 @@ def input_fn(tf_records_glob,
 
     # examples dataset
     dataset = images_dataset.apply(
-        tf.contrib.data.map_and_batch(
+        tf.data.experimental.map_and_batch(
             lambda value: parse_example(value,
                                         pixel_stats=pixel_stats),
             batch_size=batch_size,
