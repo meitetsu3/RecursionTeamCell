@@ -72,7 +72,9 @@ def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,tr
     if isinstance(features, dict):
         image = features['image']
         cell = features['cell']
+        well_type = features['well_type']
         one_hot_cell = tf.one_hot(cell, 4)
+        one_hot_well = tf.one_hot(well_type, 2)
 
 
     
@@ -91,7 +93,7 @@ def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,tr
             num_classes=n_classes,
             data_format=data_format)
         return network(
-            inputs=image, cell = one_hot_cell,
+            inputs=image, cell = one_hot_cell, well_type = one_hot_well,
             is_training=(mode == tf.estimator.ModeKeys.TRAIN))
 
     logits = build_network()
@@ -112,7 +114,7 @@ def resnet_model_fn(features,labels,mode, params, n_classes, num_train_images,tr
     
     global_step = tf.train.get_global_step()
     global_step_float = tf.cast(global_step,tf.float32)
-    mergin = 0.2*global_step_float/train_steps
+    mergin = 0.15*global_step_float/train_steps
     
     original_tgt_logits = tf.reduce_sum(tf.multiply(one_hot_labels,logits),axis=1)
     merginal_tgt_logits = tf.cos(tf.acos(original_tgt_logits)+mergin)
@@ -211,7 +213,7 @@ def main(url_base_path,
          min_learning_rate,
          max_learning_rate,
          input_fn_params=DEFAULT_INPUT_FN_PARAMS,
-         resnet_depth=101):
+         resnet_depth=50):
 
     steps_per_epoch = (num_train_images // train_batch_size)
     train_steps = steps_per_epoch * train_epochs
@@ -285,8 +287,9 @@ def main(url_base_path,
 
     def serving_input_receiver_fn():
         features = {
-          'image': tf.placeholder(dtype=tf.float32, shape=[None, 384, 384, 6]),
-          'cell': tf.placeholder(dtype=tf.int64, shape=[None])
+          'image': tf.placeholder(dtype=tf.float32, shape=[None, 500, 500, 6]),
+          'cell': tf.placeholder(dtype=tf.int64, shape=[None]),
+          'well_type': tf.placeholder(dtype=tf.int64, shape=[None]),
         }
         receiver_tensors = features
         return tf.estimator.export.ServingInputReceiver(features, receiver_tensors)

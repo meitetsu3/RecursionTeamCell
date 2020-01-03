@@ -10,16 +10,16 @@ from rxrx.main import main
 
 #!nvidia-smi
 
-MODEL_DIR = r"../model/Resnet101FAS64m02-D554WMPole-DOL1K8-bs24-ep65-CLR001-015-WD7-Cell-ValC0318-FlipRotCropBiasScale02ImgChNorm"
+MODEL_DIR = r"../model/Resnet50FAS64m015-D554WMPole-DOL1K7-bs20-ep55-CLR001-015-WD7-Cell-Welltype-ValC0318-FlipRotCrop500BiasScale01ImgChNorm-TestCtrl3"
 URL_BASE_PATH = r"../data/processed/by_exp_plate_site-42"  #r"../data/processed/controls/random-42/Ctrl
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
 main(url_base_path=URL_BASE_PATH,
      model_dir=MODEL_DIR,
-     train_epochs=65,
-     train_batch_size=24,
-     num_train_images= 87930,#73030,#12194 73030 73128? 1108*33*2, 36515*2 = 73030.73030+12194=
+     train_epochs=55,
+     train_batch_size=20,
+     num_train_images= 96914, #87930
      log_step_count_epochs=1,# text log
      save_summary_steps = 100,#100
      data_format='channels_last',

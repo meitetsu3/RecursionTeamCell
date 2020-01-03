@@ -16,6 +16,7 @@ from tensorflow.contrib import predictor
 #                                  7.83451711, 4.701167, 5.43130431]))
 
 CELL_TYPES = {'HEPG2':0,'HUVEC':1,'RPE':2,'U2OS':3}
+WELL_TYPES = {'treatment':0,'control':1}
 
 batchval_df = pd.read_csv(r"./BatchValLookup.csv")
 
@@ -31,7 +32,7 @@ train_cnt_df["pred"] = np.nan
 
 submission_df = pd.read_csv(r"../data/metadata/sample_submission.csv")
 
-export_dir = r"../model/Resnet101FAS64m02-D554WMPole-DOL1K8-bs24-ep65-CLR001-015-WD7-Cell-ValC0318-FlipRotCropBiasScale02ImgChNorm/saved_model/1574969148"
+export_dir = r"../model/Resnet50FAS64m015-D554WMPole-DOL1K7-bs20-ep55-CLR001-015-WD7-Cell-Welltype-ValC0318-FlipRotCrop500BiasScale01ImgChNorm-TestCtrl3/saved_model/1577953146"
 predict_fn = predictor.from_saved_model(export_dir)
 
 # grabbing both site 1 and site 2 for the 
@@ -70,30 +71,31 @@ for i, idcode in enumerate(tgt["id_code"]):
         img_s1[:,:,c] = (image1-mean1)/std1
         img_s2[:,:,c] = (image2-mean2)/std2
         
-    img_s1_c = img_s1[64:448,64:448,:] # 384 center crop
-    img_s2_c = img_s2[64:448,64:448,:]
-    img_s1_ul = img_s1[0:384,0:384,:]
-    img_s2_ul = img_s2[0:384,0:384,:]
-    img_s1_ur = img_s1[0:384,128:512,:] 
-    img_s2_ur = img_s2[0:384,128:512,:]
-    img_s1_ll = img_s1[128:512,0:384,:] 
-    img_s2_ll = img_s2[128:512,0:384,:]
-    img_s1_lr = img_s1[128:512,128:512,:] 
-    img_s2_lr = img_s2[128:512,128:512,:]
+    img_s1_c = img_s1[6:506,6:506,:] # 384 center crop->420
+    img_s2_c = img_s2[6:506,6:506,:]
+    img_s1_ul = img_s1[0:500,0:500,:]
+    img_s2_ul = img_s2[0:500,0:500,:]
+    img_s1_ur = img_s1[0:500,12:512,:] 
+    img_s2_ur = img_s2[0:500,12:512,:]
+    img_s1_ll = img_s1[12:512,0:500,:] 
+    img_s2_ll = img_s2[12:512,0:500,:]
+    img_s1_lr = img_s1[12:512,12:512,:] 
+    img_s2_lr = img_s2[12:512,12:512,:]
     cell = np.reshape(CELL_TYPES[idcode[0:idcode.find("-")]],(1,))
+    well_type = np.reshape(WELL_TYPES["treatment"],(1,))
     plate = np.reshape(int(idcode[idcode.find("_")+1:idcode.find("_")+2]),(1,))
     exp = np.reshape(idcode[0:idcode.find("_")],(1,))
     print("{},exp:{}, cell : {}, plate: {}".format(i,exp,cell,plate))
-    pred_s1_c = predict_fn({'image': np.reshape(img_s1_c,(1,384,384,6)),'cell':cell}) # can createa a batch. to be improved.
-    pred_s2_c = predict_fn({'image': np.reshape(img_s2_c,(1,384,384,6)),'cell':cell}) 
-    pred_s1_ul = predict_fn({'image': np.reshape(img_s1_ul,(1,384,384,6)),'cell':cell}) 
-    pred_s2_ul = predict_fn({'image': np.reshape(img_s2_ul,(1,384,384,6)),'cell':cell}) 
-    pred_s1_ur = predict_fn({'image': np.reshape(img_s1_ur,(1,384,384,6)),'cell':cell}) 
-    pred_s2_ur = predict_fn({'image': np.reshape(img_s2_ur,(1,384,384,6)),'cell':cell}) 
-    pred_s1_ll = predict_fn({'image': np.reshape(img_s1_ll,(1,384,384,6)),'cell':cell}) 
-    pred_s2_ll = predict_fn({'image': np.reshape(img_s2_ll,(1,384,384,6)),'cell':cell}) 
-    pred_s1_lr = predict_fn({'image': np.reshape(img_s1_lr,(1,384,384,6)),'cell':cell}) 
-    pred_s2_lr = predict_fn({'image': np.reshape(img_s2_lr,(1,384,384,6)),'cell':cell}) 
+    pred_s1_c = predict_fn({'image': np.reshape(img_s1_c,(1,500,500,6)),'cell':cell,'well_type':well_type}) # can createa a batch. to be improved.
+    pred_s2_c = predict_fn({'image': np.reshape(img_s2_c,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s1_ul = predict_fn({'image': np.reshape(img_s1_ul,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s2_ul = predict_fn({'image': np.reshape(img_s2_ul,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s1_ur = predict_fn({'image': np.reshape(img_s1_ur,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s2_ur = predict_fn({'image': np.reshape(img_s2_ur,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s1_ll = predict_fn({'image': np.reshape(img_s1_ll,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s2_ll = predict_fn({'image': np.reshape(img_s2_ll,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s1_lr = predict_fn({'image': np.reshape(img_s1_lr,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
+    pred_s2_lr = predict_fn({'image': np.reshape(img_s2_lr,(1,500,500,6)),'cell':cell,'well_type':well_type}) 
     prob = pred_s1_c["probabilities"] \
             +pred_s2_c["probabilities"] \
             +pred_s1_ul["probabilities"] \
@@ -116,7 +118,7 @@ df_prob = df_prob.loc[:,0:1107]
 df_prob_head = pd.DataFrame([i[:2] for i in problist],columns=["exp","plate"])
 df_prob.dtypes
 
-# add pred_raw on df_prob, add header.
+# add pred_raw on df_prob, add hproblisteader.
 pred_raw = df_prob.idxmax(axis=1)
 pred_raw = pd.DataFrame(pred_raw, columns=["pred_raw"])
 df_prob = pd.concat([df_prob_head,pred_raw,df_prob],axis=1)

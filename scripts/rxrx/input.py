@@ -31,6 +31,10 @@ CELL_TYPES = {'HEPG2':0,'HUVEC':1,'RPE':2,'U2OS':3}
 CELL_keys = list(CELL_TYPES.keys())
 CELL_values = [CELL_TYPES[k] for k in CELL_keys]
 
+WELL_TYPES = {'treatment':0,'control':1}
+WELL_keys = list(WELL_TYPES.keys())
+WELL_values = [WELL_TYPES[k] for k in WELL_keys]
+
 def set_shapes(batch_size, feature, labels):
     """Statically set the batch_size dimension."""
     labels.set_shape(
@@ -60,14 +64,14 @@ def parse_example(value,pixel_stats=None):
     image_raw = tf.decode_raw(parsed['image'], tf.uint8)
     image = tf.reshape(image_raw, image_shape)
     image.set_shape(image_shape)
-    image = tf.image.random_crop(image,size=[384,384,6])
-    b = tf.random_normal((6,), mean=0.0,stddev=0.2,seed=0)
-    a = tf.random_normal((6,), mean=1.0,stddev=0.2,seed=0)   
+    image = tf.image.random_crop(image,size=[500,500,6])
+    b = tf.random_normal((6,), mean=0.0,stddev=0.1,seed=0)
+    a = tf.random_normal((6,), mean=1.0,stddev=0.1,seed=0)   
     
     image = tf.cast(image, tf.float32)
     mean = tf.reduce_mean(image,axis=[0,1])
     std = tf.math.reduce_std(image,axis=[0,1])
-    image = (image - mean)*a / std  + b
+    image = (image - mean) * a / std + b
 
 #    image = tf.image.per_image_standardization(tf.cast(image, tf.float32))
     
@@ -81,7 +85,12 @@ def parse_example(value,pixel_stats=None):
             )
     cell = Cell_table.lookup(parsed["cell_type"])
 
-    return {"image":image,"cell":cell}, label
+    Well_table = tf.contrib.lookup.HashTable(
+            tf.contrib.lookup.KeyValueTensorInitializer(WELL_keys, WELL_values, key_dtype=tf.string, value_dtype=tf.int64), -1
+            )
+    well = Well_table.lookup(parsed["well_type"])
+    
+    return {"image":image,"cell":cell, "well_type":well}, label
 
 
 DEFAULT_PARAMS = dict(batch_size=512)

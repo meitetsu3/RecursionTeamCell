@@ -80,7 +80,7 @@ def dropblock(net, is_training, keep_prob, dropblock_size,
   """DropBlock: a regularization method for convolutional neural networks.
 
   DropBlock is a form of structured dropout, where units in a contiguous
-  region of a feature map are dropped together. DropBlock works better than
+  region of a feature map are dropped- together. DropBlock works better than
   dropout on convolutional layers due to the fact that activation units in
   convolutional layers are spatially correlated.
   See https://arxiv.org/pdf/1810.12890.pdf for details.
@@ -356,7 +356,7 @@ ResNet model.
         width]` or "channels_last for `[batch, height, width, channels]`.
     dropblock_keep_prob: `float` or `Tensor` keep_prob parameter of DropBlock.
         "None" means no DropBlock.CELL_TYPES = {b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}#{"HEPG2":0,"HUVEC":1,"RPE":2,"U2OS":3}  
-#{b'HEPG2':0,b'HUVEC':1,b'RPE':2,b'U2OS':3}
+#{b'HEPG2':0,b'HUVEC':1,b'R-PE':2,b'U2OS':3}
 CELL_keys = list(CELL_TYPES.keys())
 CELL_values = [CELL_TYPES[k] for k in CELL_keys]
 
@@ -385,7 +385,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
                         data_format='channels_first', dropblock_keep_probs=None,
                         dropblock_size=None):
   """Generator for ResNet v1 models.
-
+2
   Args:
     block_fn: `function` for the block to use within the model. Either
         `residual_block` or `bottleneck_block`.
@@ -413,7 +413,7 @@ def resnet_v1_generator(block_fn, layers, num_classes,
                     list) or len(dropblock_keep_probs) != 4:
     raise ValueError('dropblock_keep_probs is not valid:', dropblock_keep_probs)
 
-  def model(inputs, cell, is_training):
+  def model(inputs, cell, well_type, is_training):
     """Creation of the model graph."""
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=64, kernel_size=7, strides=2,
@@ -457,9 +457,9 @@ def resnet_v1_generator(block_fn, layers, num_classes,
     inputs = tf.reshape(
         inputs, [-1, 2048 if block_fn is bottleneck_block else 512])
     
-    inputs = tf.concat([inputs, cell], 1)
+    inputs = tf.concat([inputs, cell, well_type], 1)
 
-    inputs = tf.nn.dropout(inputs,0.8)
+    inputs = tf.nn.dropout(inputs,0.7)
     
     inputs = tf.layers.dense(
         inputs=inputs,
